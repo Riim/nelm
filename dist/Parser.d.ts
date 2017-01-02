@@ -1,64 +1,72 @@
-export declare enum BemlNodeType {
+export declare enum NodeType {
     BLOCK = 1,
     ELEMENT = 2,
     TEXT = 3,
     COMMENT = 4,
+    SUPER_CALL = 5,
 }
-export interface IBemlNode {
-    nodeType: BemlNodeType;
+export interface INode {
+    nodeType: NodeType;
+    [key: string]: any;
     at: number;
     raw: string;
 }
-export interface IBemlBlockDeclaration {
-    at: number;
-    raw: string;
+export interface IBlockDeclaration {
     blockName: string;
-}
-export declare type TBemlContent = Array<IBemlNode>;
-export interface IBemlBlock extends IBemlNode {
-    nodeType: BemlNodeType.BLOCK;
-    declaration: IBemlBlockDeclaration;
-    name: string;
-    content: TBemlContent;
-}
-export interface IBemlElementAttribute {
-    name: string;
-    value: string | true;
-}
-export declare type TBemlElementAttributeList = Array<IBemlElementAttribute>;
-export interface IBemlElementAttributes {
     at: number;
     raw: string;
-    list: TBemlElementAttributeList;
 }
-export interface IBemlElement extends IBemlNode {
-    nodeType: BemlNodeType.ELEMENT;
-    name: string | null;
-    attributes: IBemlElementAttributes | null;
-    content: TBemlContent | null;
+export declare type TContent = Array<INode>;
+export interface IBlock extends INode {
+    nodeType: NodeType.BLOCK;
+    declaration: IBlockDeclaration;
+    name: string;
+    content: TContent;
 }
-export interface IBemlTextNode extends IBemlNode {
-    nodeType: BemlNodeType.TEXT;
+export interface IElementAttribute {
+    name: string;
     value: string;
 }
-export interface IBemlComment extends IBemlNode {
-    nodeType: BemlNodeType.COMMENT;
+export declare type TElementAttributeList = Array<IElementAttribute>;
+export interface IElementAttributes {
+    list: TElementAttributeList;
+    at: number;
+    raw: string;
+}
+export interface IElement extends INode {
+    nodeType: NodeType.ELEMENT;
+    tagName: string;
+    name: string | null;
+    attributes: IElementAttributes | null;
+    content: TContent | null;
+}
+export interface ITextNode extends INode {
+    nodeType: NodeType.TEXT;
+    value: string;
+}
+export interface IComment extends INode {
+    nodeType: NodeType.COMMENT;
     value: string;
     multiline: boolean;
+}
+export interface ISuperCall extends INode {
+    nodeType: NodeType.SUPER_CALL;
 }
 export default class Parser {
     beml: string;
     at: number;
     chr: string;
     constructor(beml: string);
-    parse(): IBemlBlock;
-    _readBlockDeclaration(): IBemlBlockDeclaration;
-    _readContent(brackets: boolean): TBemlContent;
-    _readElement(): IBemlElement;
-    _readAttributes(): IBemlElementAttributes;
-    _readTextNode(): IBemlTextNode;
-    _readString(): string;
-    _readComment(): IBemlComment;
+    parse(): IBlock;
+    _readBlockDeclaration(): IBlockDeclaration;
+    _readContent(brackets: boolean): TContent;
+    _readElement(): IElement;
+    _readAttributes(): IElementAttributes;
+    _readTextNode(): ITextNode;
+    _readString(): {
+        value: string;
+    };
+    _readComment(): IComment;
     _readName(): string | null;
     _skipWhitespaces(): string;
     _next(current?: string): string;

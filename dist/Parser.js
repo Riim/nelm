@@ -1,13 +1,15 @@
 "use strict";
-var BemlNodeType;
-(function (BemlNodeType) {
-    BemlNodeType[BemlNodeType["BLOCK"] = 1] = "BLOCK";
-    BemlNodeType[BemlNodeType["ELEMENT"] = 2] = "ELEMENT";
-    BemlNodeType[BemlNodeType["TEXT"] = 3] = "TEXT";
-    BemlNodeType[BemlNodeType["COMMENT"] = 4] = "COMMENT";
-})(BemlNodeType = exports.BemlNodeType || (exports.BemlNodeType = {}));
+var NodeType;
+(function (NodeType) {
+    NodeType[NodeType["BLOCK"] = 1] = "BLOCK";
+    NodeType[NodeType["ELEMENT"] = 2] = "ELEMENT";
+    NodeType[NodeType["TEXT"] = 3] = "TEXT";
+    NodeType[NodeType["COMMENT"] = 4] = "COMMENT";
+    NodeType[NodeType["SUPER_CALL"] = 5] = "SUPER_CALL";
+})(NodeType = exports.NodeType || (exports.NodeType = {}));
 var namePattern = '[a-zA-Z][\\-_0-9a-zA-Z]*';
 var reNameOrNothing = RegExp(namePattern + '|', 'g');
+var superCallStatement = 'super!';
 var Parser = (function () {
     function Parser(beml) {
         this.beml = beml;
@@ -22,12 +24,12 @@ var Parser = (function () {
         }
         var decl = this._readBlockDeclaration();
         return {
-            nodeType: BemlNodeType.BLOCK,
-            at: 0,
-            raw: this.beml,
+            nodeType: NodeType.BLOCK,
             declaration: decl,
             name: decl.blockName,
-            content: content ? content.concat(this._readContent(false)) : this._readContent(false)
+            content: content ? content.concat(this._readContent(false)) : this._readContent(false),
+            at: 0,
+            raw: this.beml,
         };
     };
     Parser.prototype._readBlockDeclaration = function () {
@@ -43,9 +45,9 @@ var Parser = (function () {
             };
         }
         return {
+            blockName: blockName,
             at: at,
-            raw: '#' + blockName,
-            blockName: blockName
+            raw: '#' + blockName
         };
     };
     Parser.prototype._readContent = function (brackets) {
@@ -77,9 +79,21 @@ var Parser = (function () {
                     return content;
                 }
                 default: {
-                    if (brackets && this.chr == '}') {
-                        this._next();
-                        return content;
+                    if (brackets) {
+                        if (this.chr == '}') {
+                            this._next();
+                            return content;
+                        }
+                        var at = this.at;
+                        if (this.beml.slice(at, at + superCallStatement.length) == superCallStatement) {
+                            this.chr = this.beml.charAt((this.at = at + superCallStatement.length));
+                            content.push({
+                                nodeType: NodeType.SUPER_CALL,
+                                at: at,
+                                raw: 'super!'
+                            });
+                            break;
+                        }
                     }
                     content.push(this._readElement());
                     break;
@@ -108,12 +122,13 @@ var Parser = (function () {
         }
         var content = this.chr == '{' ? this._readContent(true) : null;
         return {
-            nodeType: BemlNodeType.ELEMENT,
-            at: at,
-            raw: this.beml.slice(at, this.at).trim(),
+            nodeType: NodeType.ELEMENT,
+            tagName: tagName,
             name: elName,
             attributes: attrs,
-            content: content
+            content: content,
+            at: at,
+            raw: this.beml.slice(at, this.at).trim(),
         };
     };
     Parser.prototype._readAttributes = function () {
@@ -122,9 +137,9 @@ var Parser = (function () {
         if (this._skipWhitespaces() == ')') {
             this._next();
             return {
+                list: [],
                 at: at,
-                raw: this.beml.slice(at, this.at),
-                list: []
+                raw: this.beml.slice(at, this.at)
             };
         }
         var list = [];
@@ -138,18 +153,15 @@ var Parser = (function () {
                     beml: this.beml
                 };
             }
-            this._skipWhitespaces();
-            if (this.chr == '=') {
+            if (this._skipWhitespaces() == '=') {
                 this._next();
-                this._skipWhitespaces();
-                var chr = this.chr;
-                if (chr == "'" || chr == '"' || chr == '`') {
-                    list.push({ name: name_1, value: this._readString() });
+                var next = this._skipWhitespaces();
+                if (next == "'" || next == '"' || next == '`') {
+                    list.push({ name: name_1, value: this._readString().value });
                 }
                 else {
                     var value = '';
                     for (;;) {
-                        var next = this._next();
                         if (!next) {
                             throw {
                                 name: 'SyntaxError',
@@ -163,12 +175,13 @@ var Parser = (function () {
                             break;
                         }
                         value += next;
+                        next = this._next();
                     }
                 }
                 this._skipWhitespaces();
             }
             else {
-                list.push({ name: name_1, value: true });
+                list.push({ name: name_1, value: '' });
             }
             if (this.chr == ')') {
                 this._next();
@@ -188,19 +201,18 @@ var Parser = (function () {
             }
         }
         return {
+            list: list,
             at: at,
-            raw: this.beml.slice(at, this.at),
-            list: list
+            raw: this.beml.slice(at, this.at)
         };
     };
     Parser.prototype._readTextNode = function () {
         var at = this.at;
-        var str = this._readString();
         return {
-            nodeType: BemlNodeType.TEXT,
+            nodeType: NodeType.TEXT,
+            value: this._readString().value,
             at: at,
-            raw: this.beml.slice(at, this.at),
-            value: str
+            raw: this.beml.slice(at, this.at)
         };
     };
     Parser.prototype._readString = function () {
@@ -217,7 +229,7 @@ var Parser = (function () {
         for (var next = void 0; (next = this._next());) {
             if (next == quoteChar) {
                 this._next();
-                return quoteChar + str + quoteChar;
+                return { value: str };
             }
             if (next == '\\') {
                 str += next + this._next();
@@ -288,11 +300,11 @@ var Parser = (function () {
             }
         }
         return {
-            nodeType: BemlNodeType.COMMENT,
-            at: at,
-            raw: this.beml.slice(at, this.at),
+            nodeType: NodeType.COMMENT,
             value: value,
-            multiline: multiline
+            multiline: multiline,
+            at: at,
+            raw: this.beml.slice(at, this.at)
         };
     };
     Parser.prototype._readName = function () {

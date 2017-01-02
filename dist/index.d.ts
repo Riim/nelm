@@ -1,2 +1,3 @@
 import Parser from './Parser';
-export { Parser };
+import Template from './Template';
+export { Parser, Template };

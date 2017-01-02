@@ -1,65 +1,72 @@
-export enum BemlNodeType {
+export enum NodeType {
 	BLOCK = 1,
 	ELEMENT,
 	TEXT,
-	COMMENT
+	COMMENT,
+	SUPER_CALL
 }
 
-export interface IBemlNode {
-	nodeType: BemlNodeType;
+export interface INode {
+	nodeType: NodeType;
+	[key: string]: any;
 	at: number;
 	raw: string;
 }
 
-export interface IBemlBlockDeclaration {
-	at: number;
-	raw: string;
+export interface IBlockDeclaration {
 	blockName: string;
-}
-
-export type TBemlContent = Array<IBemlNode>;
-
-export interface IBemlBlock extends IBemlNode {
-	nodeType: BemlNodeType.BLOCK;
-	declaration: IBemlBlockDeclaration;
-	name: string;
-	content: TBemlContent;
-}
-
-export interface IBemlElementAttribute {
-	name: string;
-	value: string | true;
-}
-
-export type TBemlElementAttributeList = Array<IBemlElementAttribute>;
-
-export interface IBemlElementAttributes {
 	at: number;
 	raw: string;
-	list: TBemlElementAttributeList;
 }
 
-export interface IBemlElement extends IBemlNode {
-	nodeType: BemlNodeType.ELEMENT;
-	name: string | null;
-	attributes: IBemlElementAttributes | null;
-	content: TBemlContent | null;
+export type TContent = Array<INode>;
+
+export interface IBlock extends INode {
+	nodeType: NodeType.BLOCK;
+	declaration: IBlockDeclaration;
+	name: string;
+	content: TContent;
 }
 
-export interface IBemlTextNode extends IBemlNode {
-	nodeType: BemlNodeType.TEXT;
+export interface IElementAttribute {
+	name: string;
 	value: string;
 }
 
-export interface IBemlComment extends IBemlNode {
-	nodeType: BemlNodeType.COMMENT;
+export type TElementAttributeList = Array<IElementAttribute>;
+
+export interface IElementAttributes {
+	list: TElementAttributeList;
+	at: number;
+	raw: string;
+}
+
+export interface IElement extends INode {
+	nodeType: NodeType.ELEMENT;
+	tagName: string;
+	name: string | null;
+	attributes: IElementAttributes | null;
+	content: TContent | null;
+}
+
+export interface ITextNode extends INode {
+	nodeType: NodeType.TEXT;
+	value: string;
+}
+
+export interface IComment extends INode {
+	nodeType: NodeType.COMMENT;
 	value: string;
 	multiline: boolean;
 }
 
-let namePattern = '[a-zA-Z][\\-_0-9a-zA-Z]*';
+export interface ISuperCall extends INode {
+	nodeType: NodeType.SUPER_CALL;
+}
 
+let namePattern = '[a-zA-Z][\\-_0-9a-zA-Z]*';
 let reNameOrNothing = RegExp(namePattern + '|', 'g');
+let superCallStatement = 'super!';
 
 export default class Parser {
 	beml: string;
@@ -70,11 +77,11 @@ export default class Parser {
 		this.beml = beml;
 	}
 
-	parse(): IBemlBlock {debugger;
+	parse(): IBlock {debugger;
 		this.at = 0;
 		this.chr = this.beml.charAt(0);
 
-		let content: TBemlContent | undefined;
+		let content: TContent | undefined;
 
 		while (this._skipWhitespaces() == '/') {
 			(content || (content = [])).push(this._readComment());
@@ -83,16 +90,16 @@ export default class Parser {
 		let decl = this._readBlockDeclaration();
 
 		return {
-			nodeType: BemlNodeType.BLOCK,
-			at: 0,
-			raw: this.beml,
+			nodeType: NodeType.BLOCK,
 			declaration: decl,
 			name: decl.blockName,
-			content: content ? content.concat(this._readContent(false)) : this._readContent(false)
+			content: content ? content.concat(this._readContent(false)) : this._readContent(false),
+			at: 0,
+			raw: this.beml,
 		};
 	}
 
-	_readBlockDeclaration(): IBemlBlockDeclaration {
+	_readBlockDeclaration(): IBlockDeclaration {
 		let at = this.at;
 
 		this._next('#');
@@ -109,18 +116,18 @@ export default class Parser {
 		}
 
 		return {
+			blockName,
 			at,
-			raw: '#' + blockName,
-			blockName
+			raw: '#' + blockName
 		};
 	}
 
-	_readContent(brackets: boolean): TBemlContent {
+	_readContent(brackets: boolean): TContent {
 		if (brackets) {
 			this._next('{');
 		}
 
-		let content = [] as TBemlContent;
+		let content = [] as TContent;
 
 		for (;;) {
 			switch (this._skipWhitespaces()) {
@@ -147,9 +154,25 @@ export default class Parser {
 					return content;
 				}
 				default: {
-					if (brackets && this.chr == '}') {
-						this._next();
-						return content;
+					if (brackets) {
+						if (this.chr == '}') {
+							this._next();
+							return content;
+						}
+
+						let at = this.at;
+
+						if (this.beml.slice(at, at + superCallStatement.length) == superCallStatement) {
+							this.chr = this.beml.charAt((this.at = at + superCallStatement.length));
+
+							content.push({
+								nodeType: NodeType.SUPER_CALL,
+								at: at,
+								raw: 'super!'
+							});
+
+							break;
+						}
 					}
 
 					content.push(this._readElement());
@@ -160,7 +183,7 @@ export default class Parser {
 		}
 	}
 
-	_readElement(): IBemlElement {
+	_readElement(): IElement {
 		let at = this.at;
 		let tagName = this._readName();
 
@@ -185,19 +208,20 @@ export default class Parser {
 			this._skipWhitespaces();
 		}
 
-		let content: TBemlContent | null = this.chr == '{' ? this._readContent(true) : null;
+		let content: TContent | null = this.chr == '{' ? this._readContent(true) : null;
 
 		return {
-			nodeType: BemlNodeType.ELEMENT,
-			at,
-			raw: this.beml.slice(at, this.at).trim(),
+			nodeType: NodeType.ELEMENT,
+			tagName,
 			name: elName,
 			attributes: attrs,
-			content
+			content,
+			at,
+			raw: this.beml.slice(at, this.at).trim(),
 		};
 	}
 
-	_readAttributes(): IBemlElementAttributes {
+	_readAttributes(): IElementAttributes {
 		let at = this.at;
 
 		this._next('(');
@@ -206,13 +230,13 @@ export default class Parser {
 			this._next();
 
 			return {
+				list: [],
 				at,
-				raw: this.beml.slice(at, this.at),
-				list: []
+				raw: this.beml.slice(at, this.at)
 			};
 		}
 
-		let list = [] as TBemlElementAttributeList;
+		let list = [] as TElementAttributeList;
 
 		for (;;) {
 			let name = this._readName();
@@ -226,22 +250,17 @@ export default class Parser {
 				};
 			}
 
-			this._skipWhitespaces();
-
-			if (this.chr == '=') {
+			if (this._skipWhitespaces() == '=') {
 				this._next();
-				this._skipWhitespaces();
 
-				let chr = this.chr;
+				let next = this._skipWhitespaces();
 
-				if (chr == "'" || chr == '"' || chr == '`') {
-					list.push({ name, value: this._readString() });
+				if (next == "'" || next == '"' || next == '`') {
+					list.push({ name, value: this._readString().value });
 				} else {
 					let value = '';
 
 					for (;;) {
-						let next = this._next();
-
 						if (!next) {
 							throw {
 								name: 'SyntaxError',
@@ -257,12 +276,14 @@ export default class Parser {
 						}
 
 						value += next;
+
+						next = this._next();
 					}
 				}
 
 				this._skipWhitespaces();
 			} else {
-				list.push({ name, value: true });
+				list.push({ name, value: '' });
 			}
 
 			if (this.chr == ')') {
@@ -282,25 +303,24 @@ export default class Parser {
 		}
 
 		return {
+			list,
 			at,
-			raw: this.beml.slice(at, this.at),
-			list
+			raw: this.beml.slice(at, this.at)
 		};
 	}
 
-	_readTextNode(): IBemlTextNode {
+	_readTextNode(): ITextNode {
 		let at = this.at;
-		let str = this._readString();
 
 		return {
-			nodeType: BemlNodeType.TEXT,
+			nodeType: NodeType.TEXT,
+			value: this._readString().value,
 			at,
-			raw: this.beml.slice(at, this.at),
-			value: str
+			raw: this.beml.slice(at, this.at)
 		};
 	}
 
-	_readString(): string {
+	_readString(): { value: string } {
 		let quoteChar = this.chr;
 
 		if (quoteChar != "'" && quoteChar != '"' && quoteChar != '`') {
@@ -317,7 +337,7 @@ export default class Parser {
 		for (let next; (next = this._next());) {
 			if (next == quoteChar) {
 				this._next();
-				return quoteChar + str + quoteChar;
+				return { value: str };
 			}
 
 			if (next == '\\') {
@@ -339,7 +359,7 @@ export default class Parser {
 		};
 	}
 
-	_readComment(): IBemlComment {
+	_readComment(): IComment {
 		let at = this.at;
 		let value = '';
 		let multiline: boolean;
@@ -398,11 +418,11 @@ export default class Parser {
 		}
 
 		return {
-			nodeType: BemlNodeType.COMMENT,
-			at,
-			raw: this.beml.slice(at, this.at),
+			nodeType: NodeType.COMMENT,
 			value,
-			multiline
+			multiline,
+			at,
+			raw: this.beml.slice(at, this.at)
 		};
 	}
 
