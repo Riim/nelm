@@ -63,8 +63,10 @@ export interface ISuperCall extends INode {
 	nodeType: NodeType.SUPER_CALL;
 }
 
-let namePattern = '[a-zA-Z][\\-_0-9a-zA-Z]*';
-let reNameOrNothing = RegExp(namePattern + '|', 'g');
+let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
+let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
+let reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
+let reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 let superCallStatement = 'super!';
 
 export default class Parser {
@@ -103,7 +105,7 @@ export default class Parser {
 
 		this._next('#');
 
-		let blockName = this._readName();
+		let blockName = this._readName(reBlockNameOrNothing);
 
 		if (!blockName) {
 			throw {
@@ -184,7 +186,7 @@ export default class Parser {
 
 	_readElement(): IElement {
 		let at = this.at;
-		let tagName = this._readName();
+		let tagName = this._readName(reTagNameOrNothing);
 
 		if (!tagName) {
 			throw {
@@ -195,7 +197,7 @@ export default class Parser {
 			};
 		}
 
-		let elName = this._skipWhitespaces() == '/' ? (this._next(), this._readName()) : null;
+		let elName = this._skipWhitespaces() == '/' ? (this._next(), this._readName(reElementNameOrNothing)) : null;
 
 		if (elName) {
 			this._skipWhitespaces();
@@ -238,7 +240,7 @@ export default class Parser {
 		let list = [] as TElementAttributeList;
 
 		for (;;) {
-			let name = this._readName();
+			let name = this._readName(reAttributeNameOrNothing);
 
 			if (!name) {
 				throw {
@@ -425,7 +427,7 @@ export default class Parser {
 		};
 	}
 
-	_readName(): string | null {
+	_readName(reNameOrNothing: RegExp): string | null {
 		reNameOrNothing.lastIndex = this.at;
 		let name = (reNameOrNothing.exec(this.beml) as RegExpExecArray)[0];
 

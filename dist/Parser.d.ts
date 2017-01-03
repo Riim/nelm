@@ -66,7 +66,7 @@ export default class Parser {
         value: string;
     };
     _readComment(): IComment;
-    _readName(): string | null;
+    _readName(reNameOrNothing: RegExp): string | null;
     _skipWhitespaces(): string;
     _next(current?: string): string;
 }
