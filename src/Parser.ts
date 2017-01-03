@@ -77,7 +77,7 @@ export default class Parser {
 		this.beml = beml;
 	}
 
-	parse(): IBlock {debugger;
+	parse(): IBlock {
 		this.at = 0;
 		this.chr = this.beml.charAt(0);
 

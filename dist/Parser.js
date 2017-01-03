@@ -15,7 +15,6 @@ var Parser = (function () {
         this.beml = beml;
     }
     Parser.prototype.parse = function () {
-        debugger;
         this.at = 0;
         this.chr = this.beml.charAt(0);
         var content;
