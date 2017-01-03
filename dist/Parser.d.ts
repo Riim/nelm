@@ -7,7 +7,6 @@ export declare enum NodeType {
 }
 export interface INode {
     nodeType: NodeType;
-    [key: string]: any;
     at: number;
     raw: string;
 }

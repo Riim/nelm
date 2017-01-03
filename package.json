@@ -1,6 +1,6 @@
 {
   "name": "@riim/beml",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -22,7 +22,7 @@
     "typescript": "^2.1.4"
   },
   "dependencies": {
-    "@riim/escape-html": "^1.0.0",
+    "@riim/escape-html": "^1.1.0",
     "escape-string": "^1.0.1"
   }
 }
