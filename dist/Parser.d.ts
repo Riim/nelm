@@ -64,6 +64,7 @@ export default class Parser {
     _readTextNode(): ITextNode;
     _readString(): {
         value: string;
+        multiline: boolean;
     };
     _readComment(): IComment;
     _readName(reNameOrNothing: RegExp): string | null;

@@ -69,6 +69,10 @@ let reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 let reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 let superCallStatement = 'super!';
 
+function normalizeMultilineText(text: string): string {
+	return text.trim().replace(/\s*(?:\r\n?|\n)/g, '\n').replace(/\n\s+/g, '\n');
+}
+
 export default class Parser {
 	beml: string;
 	at: number;
@@ -257,7 +261,12 @@ export default class Parser {
 				let next = this._skipWhitespaces();
 
 				if (next == "'" || next == '"' || next == '`') {
-					list.push({ name, value: this._readString().value });
+					let str = this._readString();
+
+					list.push({
+						name,
+						value: str.multiline ? normalizeMultilineText(str.value) : str.value
+					});
 				} else {
 					let value = '';
 
@@ -312,16 +321,17 @@ export default class Parser {
 
 	_readTextNode(): ITextNode {
 		let at = this.at;
+		let str = this._readString();
 
 		return {
 			nodeType: NodeType.TEXT,
-			value: this._readString().value,
+			value: str.multiline ? normalizeMultilineText(str.value) : str.value,
 			at,
 			raw: this.beml.slice(at, this.at)
 		};
 	}
 
-	_readString(): { value: string } {
+	_readString(): { value: string, multiline: boolean } {
 		let quoteChar = this.chr;
 
 		if (quoteChar != "'" && quoteChar != '"' && quoteChar != '`') {
@@ -338,7 +348,11 @@ export default class Parser {
 		for (let next; (next = this._next());) {
 			if (next == quoteChar) {
 				this._next();
-				return { value: str };
+
+				return {
+					value: str,
+					multiline: quoteChar == '`'
+				};
 			}
 
 			if (next == '\\') {
