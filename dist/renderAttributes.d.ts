@@ -1,2 +1,2 @@
 import { IElement } from './Parser';
-export default function renderAttributes(blockElementClassTemplate: Array<string>, el: IElement): string;
+export default function renderAttributes(classesTemplate: Array<string>, el: IElement): string;

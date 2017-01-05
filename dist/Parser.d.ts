@@ -18,8 +18,8 @@ export interface IBlockDeclaration {
 export declare type TContent = Array<INode>;
 export interface IBlock extends INode {
     nodeType: NodeType.BLOCK;
-    declaration: IBlockDeclaration;
-    name: string;
+    declaration: IBlockDeclaration | null;
+    name: string | undefined;
     content: TContent;
 }
 export interface IElementAttribute {

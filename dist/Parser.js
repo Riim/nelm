@@ -26,11 +26,11 @@ var Parser = (function () {
         while (this._skipWhitespaces() == '/') {
             (content || (content = [])).push(this._readComment());
         }
-        var decl = this._readBlockDeclaration();
+        var decl = this.chr == '#' ? this._readBlockDeclaration() : null;
         return {
             nodeType: NodeType.BLOCK,
             declaration: decl,
-            name: decl.blockName,
+            name: decl ? decl.blockName : undefined,
             content: content ? content.concat(this._readContent(false)) : this._readContent(false),
             at: 0,
             raw: this.beml,

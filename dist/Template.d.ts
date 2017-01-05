@@ -3,7 +3,6 @@ export interface INode {
     elementName: string | null;
     source: Array<string>;
     hasSuperCall: boolean;
-    [key: string]: any;
 }
 export interface IRenderer {
     (this: IElementRendererMap): string;
@@ -17,8 +16,7 @@ export interface IElementRendererMap {
 export default class Template {
     static compile(beml: string): Template;
     parent: Template | null;
-    _blockName: string;
-    _blockElementClassTemplate: Array<string>;
+    _classesTemplate: Array<string>;
     _currentNode: INode;
     _nodes: Array<INode>;
     _nodeMap: {
@@ -26,8 +24,13 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
-    constructor(beml: string, parent?: Template | null);
+    constructor(beml: string, opts?: {
+        parent?: Template;
+        blockName?: string;
+    });
     _handleNode(node: IBemlNode): void;
-    extend(beml: string): Template;
+    extend(beml: string, opts?: {
+        blockName?: string;
+    }): Template;
     render(): any;
 }

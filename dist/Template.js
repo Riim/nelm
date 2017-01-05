@@ -5,14 +5,15 @@ var selfClosingTags_1 = require("./selfClosingTags");
 var renderAttributes_1 = require("./renderAttributes");
 var elDelimiter = '__';
 var Template = (function () {
-    function Template(beml, parent) {
-        if (parent === void 0) { parent = null; }
+    function Template(beml, opts) {
         var block = new Parser_1.default(beml).parse();
-        var blockName = block.name;
-        this.parent = parent;
-        this._blockName = blockName;
-        this._blockElementClassTemplate = parent ?
-            [blockName + elDelimiter].concat(parent._blockElementClassTemplate) :
+        var parent = this.parent = opts && opts.parent || null;
+        var blockName = opts && opts.blockName || block.name;
+        if (!blockName) {
+            throw new TypeError('blockName is required');
+        }
+        this._classesTemplate = parent ?
+            [blockName + elDelimiter].concat(parent._classesTemplate) :
             [blockName + elDelimiter, ''];
         this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
         var nodeMap = this._nodeMap = {};
@@ -48,7 +49,7 @@ var Template = (function () {
                     nodes.push((this._currentNode = currentNode));
                     this._nodeMap[elName] = currentNode;
                 }
-                this._currentNode.source.push("'<" + tagName + renderAttributes_1.default(this._blockElementClassTemplate, el) + ">'");
+                this._currentNode.source.push("'<" + tagName + renderAttributes_1.default(this._classesTemplate, el) + ">'");
                 var hasContent = content && content.length;
                 if (hasContent) {
                     content.forEach(this._handleNode, this);
@@ -74,8 +75,8 @@ var Template = (function () {
             }
         }
     };
-    Template.prototype.extend = function (beml) {
-        return new Template(beml, this);
+    Template.prototype.extend = function (beml, opts) {
+        return new Template(beml, { __proto__: opts || null, parent: this });
     };
     Template.prototype.render = function () {
         return this._renderer.call(this._elementRendererMap);

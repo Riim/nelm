@@ -22,8 +22,8 @@ export type TContent = Array<INode>;
 
 export interface IBlock extends INode {
 	nodeType: NodeType.BLOCK;
-	declaration: IBlockDeclaration;
-	name: string;
+	declaration: IBlockDeclaration | null;
+	name: string | undefined;
 	content: TContent;
 }
 
@@ -92,12 +92,12 @@ export default class Parser {
 			(content || (content = [])).push(this._readComment());
 		}
 
-		let decl = this._readBlockDeclaration();
+		let decl = this.chr == '#' ? this._readBlockDeclaration() : null;
 
 		return {
 			nodeType: NodeType.BLOCK,
 			declaration: decl,
-			name: decl.blockName,
+			name: decl ? decl.blockName : undefined,
 			content: content ? content.concat(this._readContent(false)) : this._readContent(false),
 			at: 0,
 			raw: this.beml,

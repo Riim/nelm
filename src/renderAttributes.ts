@@ -2,7 +2,7 @@ import escapeString from 'escape-string';
 import escapeHTML from '@riim/escape-html';
 import { IElement } from './Parser';
 
-export default function renderAttributes(blockElementClassTemplate: Array<string>, el: IElement): string {
+export default function renderAttributes(classesTemplate: Array<string>, el: IElement): string {
 	let elName = el.name;
 	let attrs = el.attributes;
 
@@ -13,14 +13,14 @@ export default function renderAttributes(blockElementClassTemplate: Array<string
 
 			if (!f && attr.name == 'class') {
 				f = true;
-				value = blockElementClassTemplate.join(elName + ' ') + value;
+				value = classesTemplate.join(elName + ' ') + value;
 			}
 
 			return ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
 		});
 
-		return (f ? '' : ` class="${ blockElementClassTemplate.join(elName + ' ') }"`) + result.join('');
+		return (f ? '' : ` class="${ classesTemplate.join(elName + ' ') }"`) + result.join('');
 	}
 
-	return elName ? ` class="${ blockElementClassTemplate.join(elName + ' ') }"` : '';
+	return elName ? ` class="${ classesTemplate.join(elName + ' ') }"` : '';
 }

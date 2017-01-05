@@ -16,7 +16,6 @@ export interface INode {
 	elementName: string | null;
 	source: Array<string>;
 	hasSuperCall: boolean;
-	[key: string]: any;
 }
 
 export interface IRenderer {
@@ -38,8 +37,7 @@ export default class Template {
 
 	parent: Template | null;
 
-	_blockName: string;
-	_blockElementClassTemplate: Array<string>;
+	_classesTemplate: Array<string>;
 
 	_currentNode: INode;
 	_nodes: Array<INode>;
@@ -48,15 +46,18 @@ export default class Template {
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
 
-	constructor(beml: string, parent: Template | null = null) {
+	constructor(beml: string, opts?: { parent?: Template, blockName?: string }) {
 		let block = new Parser(beml).parse();
-		let blockName = block.name;
 
-		this.parent = parent;
+		let parent = this.parent = opts && opts.parent || null;
+		let blockName = opts && opts.blockName || block.name;
 
-		this._blockName = blockName;
-		this._blockElementClassTemplate = parent ?
-			[blockName + elDelimiter].concat(parent._blockElementClassTemplate) :
+		if (!blockName) {
+			throw new TypeError('blockName is required');
+		}
+
+		this._classesTemplate = parent ?
+			[blockName + elDelimiter].concat(parent._classesTemplate) :
 			[blockName + elDelimiter, ''];
 
 		this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
@@ -97,7 +98,7 @@ export default class Template {
 				}
 
 				this._currentNode.source.push(
-					`'<${ tagName }${ renderAttributes(this._blockElementClassTemplate, el) }>'`
+					`'<${ tagName }${ renderAttributes(this._classesTemplate, el) }>'`
 				);
 
 				let hasContent = content && content.length;
@@ -130,8 +131,8 @@ export default class Template {
 		}
 	}
 
-	extend(beml: string): Template {
-		return new Template(beml, this);
+	extend(beml: string, opts?: { blockName?: string }): Template {
+		return new Template(beml, { __proto__: opts || null, parent: this } as any);
 	}
 
 	render() {
