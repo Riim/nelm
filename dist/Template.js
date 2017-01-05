@@ -6,32 +6,46 @@ var renderAttributes_1 = require("./renderAttributes");
 var elDelimiter = '__';
 var Template = (function () {
     function Template(beml, opts) {
-        var block = new Parser_1.default(beml).parse();
         var parent = this.parent = opts && opts.parent || null;
-        var blockName = opts && opts.blockName || block.name;
-        if (!blockName) {
-            throw new TypeError('blockName is required');
+        if (beml) {
+            var block = new Parser_1.default(beml).parse();
+            var blockName = opts && opts.blockName || block.name;
+            if (!blockName) {
+                throw new TypeError('blockName is required');
+            }
+            this._classesTemplate = parent ?
+                [blockName + elDelimiter].concat(parent._classesTemplate) :
+                [blockName + elDelimiter, ''];
+            this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
+            var nodeMap_1 = this._nodeMap = {};
+            block.content.forEach(this._handleNode, this);
+            this._renderer = parent ?
+                parent._renderer :
+                Function("return [" + this._currentNode.source.join(', ') + "].join('');");
+            Object.keys(nodeMap_1).forEach(function (name) {
+                var node = nodeMap_1[name];
+                if (node.hasSuperCall) {
+                    var inner_1 = Function('$super', "return " + node.source.join(' + ') + ";");
+                    var parentElementRenderer_1 = parent && parent._elementRendererMap[name];
+                    this[name] = function () { return inner_1.call(this, parentElementRenderer_1); };
+                }
+                else {
+                    this[name] = Function("return " + node.source.join(' + ') + ";");
+                }
+            }, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap)));
         }
-        this._classesTemplate = parent ?
-            [blockName + elDelimiter].concat(parent._classesTemplate) :
-            [blockName + elDelimiter, ''];
-        this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
-        var nodeMap = this._nodeMap = {};
-        block.content.forEach(this._handleNode, this);
-        this._renderer = parent ?
-            parent._renderer :
-            Function("return [" + this._currentNode.source.join(', ') + "].join('');");
-        Object.keys(nodeMap).forEach(function (name) {
-            var node = nodeMap[name];
-            if (node.hasSuperCall) {
-                var inner_1 = Function('$super', "return " + node.source.join(' + ') + ";");
-                var parentElementRenderer_1 = parent && parent._elementRendererMap[name];
-                this[name] = function () { return inner_1.call(this, parentElementRenderer_1); };
+        else {
+            var blockName = opts && opts.blockName;
+            if (!blockName) {
+                throw new TypeError('blockName is required');
             }
-            else {
-                this[name] = Function("return " + node.source.join(' + ') + ";");
+            if (!parent) {
+                throw new TypeError('parent is required if beml is not defined');
             }
-        }, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap)));
+            this._classesTemplate = [blockName + elDelimiter].concat(parent._classesTemplate);
+            this._renderer = parent._renderer;
+            this._elementRendererMap = parent._elementRendererMap;
+        }
     }
     Template.compile = function (beml) {
         return new Template(beml);

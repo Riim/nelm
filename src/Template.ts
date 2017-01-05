@@ -46,40 +46,57 @@ export default class Template {
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
 
-	constructor(beml: string, opts?: { parent?: Template, blockName?: string }) {
-		let block = new Parser(beml).parse();
-
+	constructor(beml?: string, opts?: { parent?: Template, blockName?: string }) {
 		let parent = this.parent = opts && opts.parent || null;
-		let blockName = opts && opts.blockName || block.name;
 
-		if (!blockName) {
-			throw new TypeError('blockName is required');
-		}
+		if (beml) {
+			let block = new Parser(beml).parse();
+			let blockName = opts && opts.blockName || block.name;
 
-		this._classesTemplate = parent ?
-			[blockName + elDelimiter].concat(parent._classesTemplate) :
-			[blockName + elDelimiter, ''];
-
-		this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
-		let nodeMap = this._nodeMap = {} as { [elName: string]: INode };
-
-		block.content.forEach(this._handleNode, this);
-
-		this._renderer = parent ?
-			parent._renderer :
-			Function(`return [${ this._currentNode.source.join(', ') }].join('');`) as IRenderer;
-
-		Object.keys(nodeMap).forEach(function(this: IElementRendererMap, name: string) {
-			let node = nodeMap[name];
-
-			if (node.hasSuperCall) {
-				let inner = Function('$super', `return ${ node.source.join(' + ') };`) as IElementRenderer;
-				let parentElementRenderer = parent && parent._elementRendererMap[name];
-				this[name] = function() { return inner.call(this, parentElementRenderer); };
-			} else {
-				this[name] = Function(`return ${ node.source.join(' + ') };`) as IElementRenderer;
+			if (!blockName) {
+				throw new TypeError('blockName is required');
 			}
-		}, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap) as IElementRendererMap));
+
+			this._classesTemplate = parent ?
+				[blockName + elDelimiter].concat(parent._classesTemplate) :
+				[blockName + elDelimiter, ''];
+
+			this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
+			let nodeMap = this._nodeMap = {} as { [elName: string]: INode };
+
+			block.content.forEach(this._handleNode, this);
+
+			this._renderer = parent ?
+				parent._renderer :
+				Function(`return [${ this._currentNode.source.join(', ') }].join('');`) as IRenderer;
+
+			Object.keys(nodeMap).forEach(function(this: IElementRendererMap, name: string) {
+				let node = nodeMap[name];
+
+				if (node.hasSuperCall) {
+					let inner = Function('$super', `return ${ node.source.join(' + ') };`) as IElementRenderer;
+					let parentElementRenderer = parent && parent._elementRendererMap[name];
+					this[name] = function() { return inner.call(this, parentElementRenderer); };
+				} else {
+					this[name] = Function(`return ${ node.source.join(' + ') };`) as IElementRenderer;
+				}
+			}, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap) as IElementRendererMap));
+		} else {
+			let blockName = opts && opts.blockName;
+
+			if (!blockName) {
+				throw new TypeError('blockName is required');
+			}
+
+			if (!parent) {
+				throw new TypeError('parent is required if beml is not defined');
+			}
+
+			this._classesTemplate = [blockName + elDelimiter].concat(parent._classesTemplate);
+
+			this._renderer = parent._renderer;
+			this._elementRendererMap = parent._elementRendererMap;
+		}
 	}
 
 	_handleNode(node: IBemlNode) {
@@ -131,7 +148,7 @@ export default class Template {
 		}
 	}
 
-	extend(beml: string, opts?: { blockName?: string }): Template {
+	extend(beml?: string, opts?: { blockName?: string }): Template {
 		return new Template(beml, { __proto__: opts || null, parent: this } as any);
 	}
 
