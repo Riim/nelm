@@ -49,7 +49,7 @@ export default class Template {
 	constructor(beml?: string, opts?: { parent?: Template, blockName?: string }) {
 		let parent = this.parent = opts && opts.parent || null;
 
-		if (beml) {
+		if (beml !== undefined) {
 			let block = new Parser(beml).parse();
 			let blockName = opts && opts.blockName || block.name;
 

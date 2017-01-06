@@ -7,7 +7,7 @@ var elDelimiter = '__';
 var Template = (function () {
     function Template(beml, opts) {
         var parent = this.parent = opts && opts.parent || null;
-        if (beml) {
+        if (beml !== undefined) {
             var block = new Parser_1.default(beml).parse();
             var blockName = opts && opts.blockName || block.name;
             if (!blockName) {
