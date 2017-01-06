@@ -14,9 +14,8 @@ export interface IElementRendererMap {
     [name: string]: IElementRenderer;
 }
 export default class Template {
-    static compile(beml: string): Template;
     parent: Template | null;
-    _classesTemplate: Array<string>;
+    _elementClassesTemplate: Array<string>;
     _currentNode: INode;
     _nodes: Array<INode>;
     _nodeMap: {

@@ -13,8 +13,8 @@ var Template = (function () {
             if (!blockName) {
                 throw new TypeError('blockName is required');
             }
-            this._classesTemplate = parent ?
-                [blockName + elDelimiter].concat(parent._classesTemplate) :
+            this._elementClassesTemplate = parent ?
+                [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
                 [blockName + elDelimiter, ''];
             this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
             var nodeMap_1 = this._nodeMap = {};
@@ -42,14 +42,11 @@ var Template = (function () {
             if (!parent) {
                 throw new TypeError('parent is required if beml is not defined');
             }
-            this._classesTemplate = [blockName + elDelimiter].concat(parent._classesTemplate);
+            this._elementClassesTemplate = [blockName + elDelimiter].concat(parent._elementClassesTemplate);
             this._renderer = parent._renderer;
             this._elementRendererMap = parent._elementRendererMap;
         }
     }
-    Template.compile = function (beml) {
-        return new Template(beml);
-    };
     Template.prototype._handleNode = function (node) {
         switch (node.nodeType) {
             case Parser_1.NodeType.ELEMENT: {
@@ -63,7 +60,7 @@ var Template = (function () {
                     nodes.push((this._currentNode = currentNode));
                     this._nodeMap[elName] = currentNode;
                 }
-                this._currentNode.source.push("'<" + tagName + renderAttributes_1.default(this._classesTemplate, el) + ">'");
+                this._currentNode.source.push("'<" + tagName + renderAttributes_1.default(this._elementClassesTemplate, el) + ">'");
                 var hasContent = content && content.length;
                 if (hasContent) {
                     content.forEach(this._handleNode, this);

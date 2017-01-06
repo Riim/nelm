@@ -1,7 +1,7 @@
 "use strict";
 var escape_string_1 = require("escape-string");
 var escape_html_1 = require("@riim/escape-html");
-function renderAttributes(classesTemplate, el) {
+function renderAttributes(elementClassesTemplate, el) {
     var elName = el.name;
     var attrs = el.attributes;
     if (attrs && attrs.list.length) {
@@ -10,13 +10,13 @@ function renderAttributes(classesTemplate, el) {
             var value = attr.value;
             if (!f_1 && attr.name == 'class') {
                 f_1 = true;
-                value = classesTemplate.join(elName + ' ') + value;
+                value = elementClassesTemplate.join(elName + ' ') + value;
             }
             return " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
         });
-        return (f_1 ? '' : " class=\"" + classesTemplate.join(elName + ' ') + "\"") + result.join('');
+        return (f_1 ? '' : " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"") + result.join('');
     }
-    return elName ? " class=\"" + classesTemplate.join(elName + ' ') + "\"" : '';
+    return elName ? " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"" : '';
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = renderAttributes;

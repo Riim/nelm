@@ -31,13 +31,9 @@ export interface IElementRendererMap {
 }
 
 export default class Template {
-	static compile(beml: string): Template {
-		return new Template(beml);
-	}
-
 	parent: Template | null;
 
-	_classesTemplate: Array<string>;
+	_elementClassesTemplate: Array<string>;
 
 	_currentNode: INode;
 	_nodes: Array<INode>;
@@ -57,8 +53,8 @@ export default class Template {
 				throw new TypeError('blockName is required');
 			}
 
-			this._classesTemplate = parent ?
-				[blockName + elDelimiter].concat(parent._classesTemplate) :
+			this._elementClassesTemplate = parent ?
+				[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
 				[blockName + elDelimiter, ''];
 
 			this._nodes = [(this._currentNode = { elementName: null, source: [], hasSuperCall: false })];
@@ -92,7 +88,7 @@ export default class Template {
 				throw new TypeError('parent is required if beml is not defined');
 			}
 
-			this._classesTemplate = [blockName + elDelimiter].concat(parent._classesTemplate);
+			this._elementClassesTemplate = [blockName + elDelimiter].concat(parent._elementClassesTemplate);
 
 			this._renderer = parent._renderer;
 			this._elementRendererMap = parent._elementRendererMap;
@@ -115,7 +111,7 @@ export default class Template {
 				}
 
 				this._currentNode.source.push(
-					`'<${ tagName }${ renderAttributes(this._classesTemplate, el) }>'`
+					`'<${ tagName }${ renderAttributes(this._elementClassesTemplate, el) }>'`
 				);
 
 				let hasContent = content && content.length;
