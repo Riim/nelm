@@ -1,7 +1,8 @@
 import { INode as IBemlNode } from './Parser';
 export interface INode {
     elementName: string | null;
-    source: Array<string>;
+    source: Array<string> | null;
+    innerSource: Array<string>;
     hasSuperCall: boolean;
 }
 export interface IRenderer {
@@ -23,12 +24,12 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
-    constructor(beml?: string, opts?: {
+    constructor(beml: string, opts?: {
         parent?: Template;
         blockName?: string;
     });
     _handleNode(node: IBemlNode): void;
-    extend(beml?: string, opts?: {
+    extend(beml: string, opts?: {
         blockName?: string;
     }): Template;
     render(): any;
