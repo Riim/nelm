@@ -65,7 +65,7 @@ export interface ISuperCall extends INode {
 
 let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-let reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
+let reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
 let reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 let superCallStatement = 'super!';
 

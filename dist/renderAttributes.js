@@ -5,7 +5,7 @@ function renderAttributes(elementClassesTemplate, el) {
     var elName = el.name;
     var attrs = el.attributes;
     if (attrs && attrs.list.length) {
-        var f_1 = !elName;
+        var f_1 = !elName || elName.charAt(0) == '_';
         var result = attrs.list.map(function (attr) {
             var value = attr.value;
             if (!f_1 && attr.name == 'class') {
@@ -16,7 +16,7 @@ function renderAttributes(elementClassesTemplate, el) {
         });
         return (f_1 ? '' : " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"") + result.join('');
     }
-    return elName ? " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"" : '';
+    return elName && elName.charAt(0) != '_' ? " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"" : '';
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = renderAttributes;

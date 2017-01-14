@@ -7,7 +7,7 @@ export default function renderAttributes(elementClassesTemplate: Array<string>, 
 	let attrs = el.attributes;
 
 	if (attrs && attrs.list.length) {
-		let f = !elName;
+		let f = !elName || elName.charAt(0) == '_';
 		let result = attrs.list.map(attr => {
 			let value = attr.value;
 
@@ -22,5 +22,5 @@ export default function renderAttributes(elementClassesTemplate: Array<string>, 
 		return (f ? '' : ` class="${ elementClassesTemplate.join(elName + ' ') }"`) + result.join('');
 	}
 
-	return elName ? ` class="${ elementClassesTemplate.join(elName + ' ') }"` : '';
+	return elName && elName.charAt(0) != '_' ? ` class="${ elementClassesTemplate.join(elName + ' ') }"` : '';
 }

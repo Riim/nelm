@@ -9,7 +9,7 @@ var NodeType;
 })(NodeType = exports.NodeType || (exports.NodeType = {}));
 var reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 var reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-var reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
+var reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
 var reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 var superCallStatement = 'super!';
 function normalizeMultilineText(text) {
