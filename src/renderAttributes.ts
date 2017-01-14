@@ -13,14 +13,14 @@ export default function renderAttributes(elementClassesTemplate: Array<string>, 
 
 			if (!f && attr.name == 'class') {
 				f = true;
-				value = elementClassesTemplate.join(elName + ' ') + value;
+				value = elementClassesTemplate.join(elName + ' ').trim() + value;
 			}
 
 			return ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
 		});
 
-		return (f ? '' : ` class="${ elementClassesTemplate.join(elName + ' ') }"`) + result.join('');
+		return (f ? '' : ` class="${ elementClassesTemplate.join(elName + ' ').trim() }"`) + result.join('');
 	}
 
-	return elName && elName.charAt(0) != '_' ? ` class="${ elementClassesTemplate.join(elName + ' ') }"` : '';
+	return elName && elName.charAt(0) != '_' ? ` class="${ elementClassesTemplate.join(elName + ' ').trim() }"` : '';
 }

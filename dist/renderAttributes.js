@@ -10,13 +10,13 @@ function renderAttributes(elementClassesTemplate, el) {
             var value = attr.value;
             if (!f_1 && attr.name == 'class') {
                 f_1 = true;
-                value = elementClassesTemplate.join(elName + ' ') + value;
+                value = elementClassesTemplate.join(elName + ' ').trim() + value;
             }
             return " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
         });
-        return (f_1 ? '' : " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"") + result.join('');
+        return (f_1 ? '' : " class=\"" + elementClassesTemplate.join(elName + ' ').trim() + "\"") + result.join('');
     }
-    return elName && elName.charAt(0) != '_' ? " class=\"" + elementClassesTemplate.join(elName + ' ') + "\"" : '';
+    return elName && elName.charAt(0) != '_' ? " class=\"" + elementClassesTemplate.join(elName + ' ').trim() + "\"" : '';
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = renderAttributes;
