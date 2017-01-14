@@ -9,10 +9,10 @@ export interface IRenderer {
     (this: IElementRendererMap): string;
 }
 export interface IElementRenderer {
-    (this: IElementRendererMap, $super?: IElementRenderer): string;
+    (this: IElementRendererMap, $super?: IElementRendererMap): string;
 }
 export interface IElementRendererMap {
-    [name: string]: IElementRenderer;
+    [nodeName: string]: IElementRenderer;
 }
 export default class Template {
     parent: Template | null;
@@ -28,7 +28,7 @@ export default class Template {
         parent?: Template;
         blockName?: string;
     });
-    _handleNode(node: IBemlNode): void;
+    _handleNode(node: IBemlNode, parentNodeName: string): void;
     extend(beml: string, opts?: {
         blockName?: string;
     }): Template;

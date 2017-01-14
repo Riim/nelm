@@ -15,26 +15,33 @@ var Template = (function () {
         this._elementClassesTemplate = parent ?
             [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
             [blockName + elDelimiter, ''];
-        this._nodes = [(this._currentNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false })];
-        var nodeMap = this._nodeMap = {};
-        block.content.forEach(this._handleNode, this);
+        var rootNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false };
+        this._currentNode = rootNode;
+        this._nodes = [rootNode];
+        var nodeMap = this._nodeMap = { '#root': rootNode };
+        for (var _i = 0, _a = block.content; _i < _a.length; _i++) {
+            var node = _a[_i];
+            this._handleNode(node, '#root');
+        }
         this._renderer = parent ?
             parent._renderer :
             Function("return " + this._currentNode.innerSource.join(' + ') + ";");
         Object.keys(nodeMap).forEach(function (name) {
             var node = nodeMap[name];
-            this[name] = Function("return " + node.source.join(' + ') + ";");
-            if (node.hasSuperCall) {
-                var inner_1 = Function('$super', "return " + node.innerSource.join(' + ') + ";");
-                var parentElementRenderer_1 = parent && parent._elementRendererMap[name + '@inner'];
-                this[name + '@inner'] = function () { return inner_1.call(this, parentElementRenderer_1); };
-            }
-            else {
-                this[name + '@inner'] = Function("return " + node.innerSource.join(' + ') + ";");
+            if (node.source) {
+                this[name] = Function("return " + node.source.join(' + ') + ";");
+                if (node.hasSuperCall) {
+                    var inner_1 = Function('$super', "return " + node.innerSource.join(' + ') + ";");
+                    var parentElementRendererMap_1 = parent && parent._elementRendererMap;
+                    this[name + '@content'] = function () { return inner_1.call(this, parentElementRendererMap_1); };
+                }
+                else {
+                    this[name + '@content'] = Function("return " + node.innerSource.join(' + ') + ";");
+                }
             }
         }, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap)));
     }
-    Template.prototype._handleNode = function (node) {
+    Template.prototype._handleNode = function (node, parentNodeName) {
         switch (node.nodeType) {
             case Parser_1.NodeType.ELEMENT: {
                 var nodes = this._nodes;
@@ -42,14 +49,13 @@ var Template = (function () {
                 var tagName = el.tagName;
                 var elName = el.name;
                 var content = el.content;
-                var hasContent = content && content.length;
                 if (elName) {
                     var currentNode = {
                         elementName: elName,
                         source: [
                             "'<" + tagName + renderAttributes_1.default(this._elementClassesTemplate, el) + ">'",
-                            hasContent ?
-                                "this['" + elName + "@inner']() + '</" + tagName + ">'" :
+                            content && content.length ?
+                                "this['" + elName + "@content']() + '</" + tagName + ">'" :
                                 (tagName in selfClosingTags_1.default ? "''" : "'</" + tagName + ">'")
                         ],
                         innerSource: [],
@@ -61,15 +67,18 @@ var Template = (function () {
                 else {
                     this._currentNode.innerSource.push("'<" + tagName + renderAttributes_1.default(this._elementClassesTemplate, el) + ">'");
                 }
-                if (hasContent) {
-                    content.forEach(this._handleNode, this);
+                if (content) {
+                    for (var _i = 0, content_1 = content; _i < content_1.length; _i++) {
+                        var contentNode = content_1[_i];
+                        this._handleNode(contentNode, elName || parentNodeName);
+                    }
                 }
                 if (elName) {
                     nodes.pop();
                     this._currentNode = nodes[nodes.length - 1];
                     this._currentNode.innerSource.push("this['" + elName + "']()");
                 }
-                else if (hasContent || !(tagName in selfClosingTags_1.default)) {
+                else if (content || !(tagName in selfClosingTags_1.default)) {
                     this._currentNode.innerSource.push("'</" + tagName + ">'");
                 }
                 break;
@@ -79,7 +88,7 @@ var Template = (function () {
                 break;
             }
             case Parser_1.NodeType.SUPER_CALL: {
-                this._currentNode.innerSource.push("$super.call(this)");
+                this._currentNode.innerSource.push("$super['" + (node.elementName || parentNodeName) + "@content'].call(this)");
                 this._currentNode.hasSuperCall = true;
                 break;
             }

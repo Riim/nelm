@@ -18,6 +18,7 @@ export interface IBlockDeclaration {
 export declare type TContent = Array<INode>;
 export interface IBlock extends INode {
     nodeType: NodeType.BLOCK;
+    nodeName: '#root';
     declaration: IBlockDeclaration | null;
     name: string | undefined;
     content: TContent;
@@ -34,6 +35,7 @@ export interface IElementAttributes {
 }
 export interface IElement extends INode {
     nodeType: NodeType.ELEMENT;
+    nodeName: string | null;
     tagName: string;
     name: string | null;
     attributes: IElementAttributes | null;
@@ -50,6 +52,7 @@ export interface IComment extends INode {
 }
 export interface ISuperCall extends INode {
     nodeType: NodeType.SUPER_CALL;
+    elementName: string | null;
 }
 export default class Parser {
     beml: string;
@@ -58,7 +61,7 @@ export default class Parser {
     constructor(beml: string);
     parse(): IBlock;
     _readBlockDeclaration(): IBlockDeclaration;
-    _readContent(brackets: boolean): TContent;
+    _readContent(withBrackets: boolean): TContent;
     _readElement(): IElement;
     _readAttributes(): IElementAttributes;
     _readTextNode(): ITextNode;

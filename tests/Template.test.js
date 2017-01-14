@@ -51,11 +51,24 @@ test('super', () => {
 	let t1 = new Template(`
 		#block1
 		span/el1 { 'text' }
-		br
 	`);
 
 	expect(t1.extend(`
 		#block1-x
 		div/el1 { span { super! } }
-	`).render()).toBe('<div class="block1-x__el1 block1__el1"><span>text</span></div><br>');
+	`).render()).toBe('<div class="block1-x__el1 block1__el1"><span>text</span></div>');
+});
+
+test('super.el-name', () => {
+	let t1 = new Template(`
+		#block1
+		span/el1 { 'text' }
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		div/el1 { span/el2 { super.el1! } }
+	`).render()).toBe(
+		'<div class="block1-x__el1 block1__el1"><span class="block1-x__el2 block1__el2">text</span></div>'
+	);
 });

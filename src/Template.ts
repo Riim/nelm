@@ -2,9 +2,9 @@ import escapeString from 'escape-string';
 import {
 	NodeType as BemlNodeType,
 	INode as IBemlNode,
-	TContent as TBemlContent,
 	IElement as IBemlElement,
 	ITextNode as IBemlTextNode,
+	ISuperCall as IBemlSuperCall,
 	default as Parser
 } from './Parser';
 import selfClosingTags from './selfClosingTags';
@@ -22,11 +22,11 @@ export interface IRenderer {
 }
 
 export interface IElementRenderer {
-	(this: IElementRendererMap, $super?: IElementRenderer): string;
+	(this: IElementRendererMap, $super?: IElementRendererMap): string;
 }
 
 export interface IElementRendererMap {
-	[name: string]: IElementRenderer;
+	[nodeName: string]: IElementRenderer;
 }
 
 let elDelimiter = '__';
@@ -57,10 +57,15 @@ export default class Template {
 			[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
 			[blockName + elDelimiter, ''];
 
-		this._nodes = [(this._currentNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false })];
-		let nodeMap = this._nodeMap = {} as { [elName: string]: INode };
+		let rootNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false };
 
-		block.content.forEach(this._handleNode, this);
+		this._currentNode = rootNode;
+		this._nodes = [rootNode];
+		let nodeMap = this._nodeMap = { '#root': rootNode } as { [elName: string]: INode };
+
+		for (let node of block.content) {
+			this._handleNode(node, '#root');
+		}
 
 		this._renderer = parent ?
 			parent._renderer :
@@ -69,19 +74,21 @@ export default class Template {
 		Object.keys(nodeMap).forEach(function(this: IElementRendererMap, name: string) {
 			let node = nodeMap[name];
 
-			this[name] = Function(`return ${ (node.source as Array<string>).join(' + ') };`) as IElementRenderer;
+			if (node.source) {
+				this[name] = Function(`return ${ (node.source as Array<string>).join(' + ') };`) as IElementRenderer;
 
-			if (node.hasSuperCall) {
-				let inner = Function('$super', `return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
-				let parentElementRenderer = parent && parent._elementRendererMap[name + '@inner'];
-				this[name + '@inner'] = function() { return inner.call(this, parentElementRenderer); };
-			} else {
-				this[name + '@inner'] = Function(`return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
+				if (node.hasSuperCall) {
+					let inner = Function('$super', `return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
+					let parentElementRendererMap = parent && parent._elementRendererMap;
+					this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
+				} else {
+					this[name + '@content'] = Function(`return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
+				}
 			}
 		}, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap) as IElementRendererMap));
 	}
 
-	_handleNode(node: IBemlNode) {
+	_handleNode(node: IBemlNode, parentNodeName: string) {
 		switch (node.nodeType) {
 			case BemlNodeType.ELEMENT: {
 				let nodes = this._nodes;
@@ -89,15 +96,14 @@ export default class Template {
 				let tagName = el.tagName;
 				let elName = el.name;
 				let content = el.content;
-				let hasContent = content && content.length;
 
 				if (elName) {
 					let currentNode = {
 						elementName: elName,
 						source: [
 							`'<${ tagName }${ renderAttributes(this._elementClassesTemplate, el) }>'`,
-							hasContent ?
-								`this['${ elName }@inner']() + '</${ tagName }>'` :
+							content && content.length ?
+								`this['${ elName }@content']() + '</${ tagName }>'` :
 								(tagName in selfClosingTags ? "''" : `'</${ tagName }>'`)
 						],
 						innerSource: [],
@@ -112,15 +118,17 @@ export default class Template {
 					);
 				}
 
-				if (hasContent) {
-					(content as TBemlContent).forEach(this._handleNode, this);
+				if (content) {
+					for (let contentNode of content) {
+						this._handleNode(contentNode, elName || parentNodeName);
+					}
 				}
 
 				if (elName) {
 					nodes.pop();
 					this._currentNode = nodes[nodes.length - 1];
 					this._currentNode.innerSource.push(`this['${ elName }']()`);
-				} else if (hasContent || !(tagName in selfClosingTags)) {
+				} else if (content || !(tagName in selfClosingTags)) {
 					this._currentNode.innerSource.push(`'</${ tagName }>'`);
 				}
 
@@ -131,7 +139,9 @@ export default class Template {
 				break;
 			}
 			case BemlNodeType.SUPER_CALL: {
-				this._currentNode.innerSource.push(`$super.call(this)`);
+				this._currentNode.innerSource.push(
+					`$super['${ (node as IBemlSuperCall).elementName || parentNodeName }@content'].call(this)`
+				);
 				this._currentNode.hasSuperCall = true;
 				break;
 			}

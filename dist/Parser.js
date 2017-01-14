@@ -11,7 +11,7 @@ var reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 var reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 var reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
 var reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-var superCallStatement = 'super!';
+var reSuperCallOrNothing = /super(?:\.([_a-zA-Z][\-\w]*))?!|/g;
 function normalizeMultilineText(text) {
     return text.trim().replace(/\s*(?:\r\n?|\n)/g, '\n').replace(/\n\s+/g, '\n');
 }
@@ -29,6 +29,7 @@ var Parser = (function () {
         var decl = this.chr == '#' ? this._readBlockDeclaration() : null;
         return {
             nodeType: NodeType.BLOCK,
+            nodeName: '#root',
             declaration: decl,
             name: decl ? decl.blockName : undefined,
             content: content ? content.concat(this._readContent(false)) : this._readContent(false),
@@ -54,8 +55,8 @@ var Parser = (function () {
             raw: '#' + blockName
         };
     };
-    Parser.prototype._readContent = function (brackets) {
-        if (brackets) {
+    Parser.prototype._readContent = function (withBrackets) {
+        if (withBrackets) {
             this._next('{');
         }
         var content = [];
@@ -72,7 +73,7 @@ var Parser = (function () {
                     break;
                 }
                 case '': {
-                    if (brackets) {
+                    if (withBrackets) {
                         throw {
                             name: 'SyntaxError',
                             message: 'Missing "}" in compound statement',
@@ -83,18 +84,22 @@ var Parser = (function () {
                     return content;
                 }
                 default: {
-                    if (brackets) {
+                    if (withBrackets) {
                         if (this.chr == '}') {
                             this._next();
                             return content;
                         }
                         var at = this.at;
-                        if (this.beml.slice(at, at + superCallStatement.length) == superCallStatement) {
-                            this.chr = this.beml.charAt((this.at = at + superCallStatement.length));
+                        reSuperCallOrNothing.lastIndex = at;
+                        var superCall = reSuperCallOrNothing.exec(this.beml);
+                        var superCallRaw = superCall[0];
+                        if (superCallRaw) {
+                            this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
                             content.push({
                                 nodeType: NodeType.SUPER_CALL,
+                                elementName: superCall[1] || null,
                                 at: at,
-                                raw: 'super!'
+                                raw: superCallRaw
                             });
                             break;
                         }
@@ -127,6 +132,7 @@ var Parser = (function () {
         var content = this.chr == '{' ? this._readContent(true) : null;
         return {
             nodeType: NodeType.ELEMENT,
+            nodeName: elName,
             tagName: tagName,
             name: elName,
             attributes: attrs,

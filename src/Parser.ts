@@ -22,6 +22,7 @@ export type TContent = Array<INode>;
 
 export interface IBlock extends INode {
 	nodeType: NodeType.BLOCK;
+	nodeName: '#root';
 	declaration: IBlockDeclaration | null;
 	name: string | undefined;
 	content: TContent;
@@ -42,6 +43,7 @@ export interface IElementAttributes {
 
 export interface IElement extends INode {
 	nodeType: NodeType.ELEMENT;
+	nodeName: string | null;
 	tagName: string;
 	name: string | null;
 	attributes: IElementAttributes | null;
@@ -61,13 +63,14 @@ export interface IComment extends INode {
 
 export interface ISuperCall extends INode {
 	nodeType: NodeType.SUPER_CALL;
+	elementName: string | null;
 }
 
 let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
 let reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
 let reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-let superCallStatement = 'super!';
+let reSuperCallOrNothing = /super(?:\.([_a-zA-Z][\-\w]*))?!|/g;
 
 function normalizeMultilineText(text: string): string {
 	return text.trim().replace(/\s*(?:\r\n?|\n)/g, '\n').replace(/\n\s+/g, '\n');
@@ -96,6 +99,7 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.BLOCK,
+			nodeName: '#root',
 			declaration: decl,
 			name: decl ? decl.blockName : undefined,
 			content: content ? content.concat(this._readContent(false)) : this._readContent(false),
@@ -127,8 +131,8 @@ export default class Parser {
 		};
 	}
 
-	_readContent(brackets: boolean): TContent {
-		if (brackets) {
+	_readContent(withBrackets: boolean): TContent {
+		if (withBrackets) {
 			this._next('{');
 		}
 
@@ -147,7 +151,7 @@ export default class Parser {
 					break;
 				}
 				case '': {
-					if (brackets) {
+					if (withBrackets) {
 						throw {
 							name: 'SyntaxError',
 							message: 'Missing "}" in compound statement',
@@ -159,7 +163,7 @@ export default class Parser {
 					return content;
 				}
 				default: {
-					if (brackets) {
+					if (withBrackets) {
 						if (this.chr == '}') {
 							this._next();
 							return content;
@@ -167,14 +171,19 @@ export default class Parser {
 
 						let at = this.at;
 
-						if (this.beml.slice(at, at + superCallStatement.length) == superCallStatement) {
-							this.chr = this.beml.charAt((this.at = at + superCallStatement.length));
+						reSuperCallOrNothing.lastIndex = at;
+						let superCall = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
+						let superCallRaw = superCall[0];
+
+						if (superCallRaw) {
+							this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
 
 							content.push({
 								nodeType: NodeType.SUPER_CALL,
+								elementName: superCall[1] || null,
 								at: at,
-								raw: 'super!'
-							});
+								raw: superCallRaw
+							} as ISuperCall);
 
 							break;
 						}
@@ -217,6 +226,7 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.ELEMENT,
+			nodeName: elName,
 			tagName,
 			name: elName,
 			attributes: attrs,
