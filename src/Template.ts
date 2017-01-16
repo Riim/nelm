@@ -146,27 +146,25 @@ export default class Template {
 							}
 						}
 
-						let attrListZ;
-
 						if (elName.charAt(0) != '_') {
 							let hasAttrClass = hasOwn.call(attrList, 'class');
 
-							attrListZ = { __proto__: attrList, length: attrCount + +!hasAttrClass };
+							attrList = { __proto__: attrList, length: attrCount + +!hasAttrClass };
 
 							if (hasAttrClass) {
-								attrListZ[attrList['class']] = ' class="' +
+								attrList[attrList['class']] = ' class="' +
 									this._elementClassesTemplate.join(elName + ' ') +
 									attrList[attrList['class']].slice(8);
 							} else {
-								attrListZ[attrCount] = ` class="${
+								attrList[attrCount] = ` class="${
 									this._elementClassesTemplate.join(elName + ' ').slice(0, -1)
 								}"`;
 							}
 						} else {
-							attrListZ = attrList;
+							attrList = { __proto__: attrList, length: attrCount };
 						}
 
-						renderredAttrs = join.call(attrListZ, '');
+						renderredAttrs = join.call(attrList, '');
 					} else {
 						renderredAttrs = elName.charAt(0) != '_' ?
 							` class="${ this._elementClassesTemplate.join(elName + ' ').slice(0, -1) }"` :

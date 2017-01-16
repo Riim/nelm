@@ -96,5 +96,23 @@ test('attributes super.el-name!', () => {
 		#block1-x
 		div/el1 (super.el2!, class=_mod1)
 		div/el2 (super.el1!, class=_mod2)
-	`).render()).toBe('<div attr3="value3" attr4="value4" class="block1-x__el1 block1__el1 _mod1"></div><div attr1="value1" attr2="value2" class="block1-x__el2 block1__el2 _mod2"></div>');
+	`).render()).toBe(
+		'<div attr3="value3" attr4="value4" class="block1-x__el1 block1__el1 _mod1"></div><div attr1="value1" attr2="value2" class="block1-x__el2 block1__el2 _mod2"></div>'
+	);
+});
+
+test('attributes super._el-name!', () => {
+	let t1 = new Template(`
+		#block1
+		span/_el1 (attr1=value1, attr2=value2)
+		span/_el2 (attr3=value3, attr4=value4)
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		div/_el1 (super._el2!, class=_mod1)
+		div/_el2 (super._el1!, class=_mod2)
+	`).render()).toBe(
+		'<div attr3="value3" attr4="value4" class="_mod1"></div><div attr1="value1" attr2="value2" class="_mod2"></div>'
+	);
 });
