@@ -33,12 +33,12 @@ var Template = (function () {
             if (node.source) {
                 this[name] = Function("return " + node.source.join(' + ') + ";");
                 if (node.containsSuperCall) {
-                    var inner_1 = Function('$super', "return " + node.innerSource.join(' + ') + ";");
+                    var inner_1 = Function('$super', "return " + (node.innerSource.join(' + ') || "''") + ";");
                     var parentElementRendererMap_1 = parent && parent._elementRendererMap;
                     this[name + '@content'] = function () { return inner_1.call(this, parentElementRendererMap_1); };
                 }
                 else {
-                    this[name + '@content'] = Function("return " + node.innerSource.join(' + ') + ";");
+                    this[name + '@content'] = Function("return " + (node.innerSource.join(' + ') || "''") + ";");
                 }
             }
         }, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap)));

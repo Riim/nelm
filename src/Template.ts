@@ -84,11 +84,13 @@ export default class Template {
 				this[name] = Function(`return ${ (node.source as Array<string>).join(' + ') };`) as IElementRenderer;
 
 				if (node.containsSuperCall) {
-					let inner = Function('$super', `return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
+					let inner = Function('$super', `return ${ node.innerSource.join(' + ') || "''" };`) as
+						IElementRenderer;
 					let parentElementRendererMap = parent && parent._elementRendererMap;
 					this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
 				} else {
-					this[name + '@content'] = Function(`return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
+					this[name + '@content'] = Function(`return ${ node.innerSource.join(' + ') || "''" };`) as
+						IElementRenderer;
 				}
 			}
 		}, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap) as IElementRendererMap));
