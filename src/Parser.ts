@@ -28,6 +28,11 @@ export interface IBlock extends INode {
 	content: TContent;
 }
 
+export interface ISuperCall extends INode {
+	nodeType: NodeType.SUPER_CALL;
+	elementName: string | null;
+}
+
 export interface IElementAttribute {
 	name: string;
 	value: string;
@@ -36,6 +41,7 @@ export interface IElementAttribute {
 export type TElementAttributeList = Array<IElementAttribute>;
 
 export interface IElementAttributes {
+	superCall: ISuperCall | null;
 	list: TElementAttributeList;
 	at: number;
 	raw: string;
@@ -59,11 +65,6 @@ export interface IComment extends INode {
 	nodeType: NodeType.COMMENT;
 	value: string;
 	multiline: boolean;
-}
-
-export interface ISuperCall extends INode {
-	nodeType: NodeType.SUPER_CALL;
-	elementName: string | null;
 }
 
 let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
@@ -172,16 +173,16 @@ export default class Parser {
 						let at = this.at;
 
 						reSuperCallOrNothing.lastIndex = at;
-						let superCall = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
-						let superCallRaw = superCall[0];
+						let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
+						let superCallRaw = superCallMatch[0];
 
 						if (superCallRaw) {
 							this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
 
 							content.push({
 								nodeType: NodeType.SUPER_CALL,
-								elementName: superCall[1] || null,
-								at: at,
+								elementName: superCallMatch[1] || null,
+								at,
 								raw: superCallRaw
 							} as ISuperCall);
 
@@ -245,65 +246,71 @@ export default class Parser {
 			this._next();
 
 			return {
+				superCall: null,
 				list: [],
 				at,
 				raw: this.beml.slice(at, this.at)
 			};
 		}
 
+		let superCall: ISuperCall | null | undefined;
 		let list = [] as TElementAttributeList;
 
 		for (;;) {
-			let name = this._readName(reAttributeNameOrNothing);
-
-			if (!name) {
-				throw {
-					name: 'SyntaxError',
-					message: 'Invalid attribute name',
-					at: this.at,
-					beml: this.beml
-				};
-			}
-
-			if (this._skipWhitespaces() == '=') {
-				this._next();
-
-				let next = this._skipWhitespaces();
-
-				if (next == "'" || next == '"' || next == '`') {
-					let str = this._readString();
-
-					list.push({
-						name,
-						value: str.multiline ? normalizeMultilineText(str.value) : str.value
-					});
-				} else {
-					let value = '';
-
-					for (;;) {
-						if (!next) {
-							throw {
-								name: 'SyntaxError',
-								message: 'Invalid attribute',
-								at: this.at,
-								beml: this.beml
-							};
-						}
-
-						if (next == '\r' || next == '\n' || next == ',' || next == ')') {
-							list.push({ name, value: value.trim() });
-							break;
-						}
-
-						value += next;
-
-						next = this._next();
-					}
-				}
-
+			if (!superCall && this.chr == 's' && (superCall = this._readSuperCall())) {
 				this._skipWhitespaces();
 			} else {
-				list.push({ name, value: '' });
+				let name = this._readName(reAttributeNameOrNothing);
+
+				if (!name) {
+					throw {
+						name: 'SyntaxError',
+						message: 'Invalid attribute name',
+						at: this.at,
+						beml: this.beml
+					};
+				}
+
+				if (this._skipWhitespaces() == '=') {
+					this._next();
+
+					let next = this._skipWhitespaces();
+
+					if (next == "'" || next == '"' || next == '`') {
+						let str = this._readString();
+
+						list.push({
+							name,
+							value: str.multiline ? normalizeMultilineText(str.value) : str.value
+						});
+					} else {
+						let value = '';
+
+						for (;;) {
+							if (!next) {
+								throw {
+									name: 'SyntaxError',
+									message: 'Invalid attribute',
+									at: this.at,
+									beml: this.beml
+								};
+							}
+
+							if (next == '\r' || next == '\n' || next == ',' || next == ')') {
+								list.push({ name, value: value.trim() });
+								break;
+							}
+
+							value += next;
+
+							next = this._next();
+						}
+					}
+
+					this._skipWhitespaces();
+				} else {
+					list.push({ name, value: '' });
+				}
 			}
 
 			if (this.chr == ')') {
@@ -323,10 +330,32 @@ export default class Parser {
 		}
 
 		return {
+			superCall: superCall || null,
 			list,
 			at,
 			raw: this.beml.slice(at, this.at)
 		};
+	}
+
+	_readSuperCall(): ISuperCall | null {
+		let at = this.at;
+
+		reSuperCallOrNothing.lastIndex = at;
+		let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
+		let superCallRaw = superCallMatch[0];
+
+		if (superCallRaw) {
+			this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+
+			return {
+				nodeType: NodeType.SUPER_CALL,
+				elementName: superCallMatch[1] || null,
+				at,
+				raw: superCallRaw
+			};
+		}
+
+		return null;
 	}
 
 	_readTextNode(): ITextNode {

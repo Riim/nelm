@@ -91,13 +91,13 @@ var Parser = (function () {
                         }
                         var at = this.at;
                         reSuperCallOrNothing.lastIndex = at;
-                        var superCall = reSuperCallOrNothing.exec(this.beml);
-                        var superCallRaw = superCall[0];
+                        var superCallMatch = reSuperCallOrNothing.exec(this.beml);
+                        var superCallRaw = superCallMatch[0];
                         if (superCallRaw) {
                             this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
                             content.push({
                                 nodeType: NodeType.SUPER_CALL,
-                                elementName: superCall[1] || null,
+                                elementName: superCallMatch[1] || null,
                                 at: at,
                                 raw: superCallRaw
                             });
@@ -147,55 +147,62 @@ var Parser = (function () {
         if (this._skipWhitespaces() == ')') {
             this._next();
             return {
+                superCall: null,
                 list: [],
                 at: at,
                 raw: this.beml.slice(at, this.at)
             };
         }
+        var superCall;
         var list = [];
         for (;;) {
-            var name_1 = this._readName(reAttributeNameOrNothing);
-            if (!name_1) {
-                throw {
-                    name: 'SyntaxError',
-                    message: 'Invalid attribute name',
-                    at: this.at,
-                    beml: this.beml
-                };
-            }
-            if (this._skipWhitespaces() == '=') {
-                this._next();
-                var next = this._skipWhitespaces();
-                if (next == "'" || next == '"' || next == '`') {
-                    var str = this._readString();
-                    list.push({
-                        name: name_1,
-                        value: str.multiline ? normalizeMultilineText(str.value) : str.value
-                    });
-                }
-                else {
-                    var value = '';
-                    for (;;) {
-                        if (!next) {
-                            throw {
-                                name: 'SyntaxError',
-                                message: 'Invalid attribute',
-                                at: this.at,
-                                beml: this.beml
-                            };
-                        }
-                        if (next == '\r' || next == '\n' || next == ',' || next == ')') {
-                            list.push({ name: name_1, value: value.trim() });
-                            break;
-                        }
-                        value += next;
-                        next = this._next();
-                    }
-                }
+            if (!superCall && this.chr == 's' && (superCall = this._readSuperCall())) {
                 this._skipWhitespaces();
             }
             else {
-                list.push({ name: name_1, value: '' });
+                var name_1 = this._readName(reAttributeNameOrNothing);
+                if (!name_1) {
+                    throw {
+                        name: 'SyntaxError',
+                        message: 'Invalid attribute name',
+                        at: this.at,
+                        beml: this.beml
+                    };
+                }
+                if (this._skipWhitespaces() == '=') {
+                    this._next();
+                    var next = this._skipWhitespaces();
+                    if (next == "'" || next == '"' || next == '`') {
+                        var str = this._readString();
+                        list.push({
+                            name: name_1,
+                            value: str.multiline ? normalizeMultilineText(str.value) : str.value
+                        });
+                    }
+                    else {
+                        var value = '';
+                        for (;;) {
+                            if (!next) {
+                                throw {
+                                    name: 'SyntaxError',
+                                    message: 'Invalid attribute',
+                                    at: this.at,
+                                    beml: this.beml
+                                };
+                            }
+                            if (next == '\r' || next == '\n' || next == ',' || next == ')') {
+                                list.push({ name: name_1, value: value.trim() });
+                                break;
+                            }
+                            value += next;
+                            next = this._next();
+                        }
+                    }
+                    this._skipWhitespaces();
+                }
+                else {
+                    list.push({ name: name_1, value: '' });
+                }
             }
             if (this.chr == ')') {
                 this._next();
@@ -215,10 +222,27 @@ var Parser = (function () {
             }
         }
         return {
+            superCall: superCall || null,
             list: list,
             at: at,
             raw: this.beml.slice(at, this.at)
         };
+    };
+    Parser.prototype._readSuperCall = function () {
+        var at = this.at;
+        reSuperCallOrNothing.lastIndex = at;
+        var superCallMatch = reSuperCallOrNothing.exec(this.beml);
+        var superCallRaw = superCallMatch[0];
+        if (superCallRaw) {
+            this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+            return {
+                nodeType: NodeType.SUPER_CALL,
+                elementName: superCallMatch[1] || null,
+                at: at,
+                raw: superCallRaw
+            };
+        }
+        return null;
     };
     Parser.prototype._readTextNode = function () {
         var at = this.at;

@@ -3,7 +3,7 @@ export interface INode {
     elementName: string | null;
     source: Array<string> | null;
     innerSource: Array<string>;
-    hasSuperCall: boolean;
+    containsSuperCall: boolean;
 }
 export interface IRenderer {
     (this: IElementRendererMap): string;
@@ -24,6 +24,12 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
+    _attributeListMap: {
+        [elName: string]: Object;
+    };
+    _attributeCountMap: {
+        [elName: string]: number;
+    };
     constructor(beml: string, opts?: {
         parent?: Template;
         blockName?: string;

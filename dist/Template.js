@@ -1,8 +1,10 @@
 "use strict";
 var escape_string_1 = require("escape-string");
+var escape_html_1 = require("@riim/escape-html");
 var Parser_1 = require("./Parser");
 var selfClosingTags_1 = require("./selfClosingTags");
-var renderAttributes_1 = require("./renderAttributes");
+var hasOwn = Object.prototype.hasOwnProperty;
+var join = Array.prototype.join;
 var elDelimiter = '__';
 var Template = (function () {
     function Template(beml, opts) {
@@ -15,7 +17,7 @@ var Template = (function () {
         this._elementClassesTemplate = parent ?
             [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
             [blockName + elDelimiter, ''];
-        var rootNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false };
+        var rootNode = { elementName: null, source: null, innerSource: [], containsSuperCall: false };
         this._currentNode = rootNode;
         this._nodes = [rootNode];
         var nodeMap = this._nodeMap = { '#root': rootNode };
@@ -30,7 +32,7 @@ var Template = (function () {
             var node = nodeMap[name];
             if (node.source) {
                 this[name] = Function("return " + node.source.join(' + ') + ";");
-                if (node.hasSuperCall) {
+                if (node.containsSuperCall) {
                     var inner_1 = Function('$super', "return " + node.innerSource.join(' + ') + ";");
                     var parentElementRendererMap_1 = parent && parent._elementRendererMap;
                     this[name + '@content'] = function () { return inner_1.call(this, parentElementRendererMap_1); };
@@ -44,32 +46,96 @@ var Template = (function () {
     Template.prototype._handleNode = function (node, parentNodeName) {
         switch (node.nodeType) {
             case Parser_1.NodeType.ELEMENT: {
+                var parent_1 = this.parent;
                 var nodes = this._nodes;
                 var el = node;
                 var tagName = el.tagName;
                 var elName = el.name;
+                var elAttrs = el.attributes;
                 var content = el.content;
                 if (elName) {
+                    var attrListMap = this._attributeListMap ||
+                        (this._attributeListMap = Object.create(parent_1 && parent_1._attributeListMap || null));
+                    var attrCountMap = this._attributeCountMap ||
+                        (this._attributeCountMap = Object.create(parent_1 && parent_1._attributeCountMap || null));
+                    var renderredAttrs = void 0;
+                    if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
+                        var superCall = elAttrs.superCall;
+                        var attrList = void 0;
+                        var attrCount = void 0;
+                        if (superCall) {
+                            if (!parent_1) {
+                                throw new TypeError("Required parent template for \"" + superCall.raw + "\"");
+                            }
+                            attrList = attrListMap[elName] =
+                                Object.create(parent_1._attributeListMap[superCall.elementName || elName] || null);
+                            attrCount = attrCountMap[elName] =
+                                parent_1._attributeCountMap[superCall.elementName || elName] || 0;
+                        }
+                        else {
+                            attrList = attrListMap[elName] = {};
+                            attrCount = attrCountMap[elName] = 0;
+                        }
+                        for (var _i = 0, _a = elAttrs.list; _i < _a.length; _i++) {
+                            var attr = _a[_i];
+                            var name_1 = attr.name;
+                            var value = attr.value;
+                            var index = attrList[name_1];
+                            if (index === undefined) {
+                                attrList[attrCount] = " " + name_1 + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
+                                attrList[name_1] = attrCount++;
+                                attrCountMap[elName] = attrCount;
+                            }
+                            else {
+                                attrList[index] = " " + name_1 + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
+                                attrList[name_1] = index;
+                            }
+                        }
+                        var attrListZ = void 0;
+                        if (elName.charAt(0) != '_') {
+                            var hasAttrClass = hasOwn.call(attrList, 'class');
+                            attrListZ = { __proto__: attrList, length: attrCount + +!hasAttrClass };
+                            if (hasAttrClass) {
+                                attrListZ[attrList['class']] = ' class="' +
+                                    this._elementClassesTemplate.join(elName + ' ') +
+                                    attrList[attrList['class']].slice(8);
+                            }
+                            else {
+                                attrListZ[attrCount] = " class=\"" + this._elementClassesTemplate.join(elName + ' ').slice(0, -1) + "\"";
+                            }
+                        }
+                        else {
+                            attrListZ = attrList;
+                        }
+                        renderredAttrs = join.call(attrListZ, '');
+                    }
+                    else {
+                        renderredAttrs = elName.charAt(0) != '_' ?
+                            " class=\"" + this._elementClassesTemplate.join(elName + ' ').slice(0, -1) + "\"" :
+                            '';
+                    }
                     var currentNode = {
                         elementName: elName,
                         source: [
-                            "'<" + tagName + renderAttributes_1.default(this._elementClassesTemplate, el) + ">'",
+                            "'<" + tagName + renderredAttrs + ">'",
                             content && content.length ?
                                 "this['" + elName + "@content']() + '</" + tagName + ">'" :
-                                (tagName in selfClosingTags_1.default ? "''" : "'</" + tagName + ">'")
+                                (!content && tagName in selfClosingTags_1.default ? "''" : "'</" + tagName + ">'")
                         ],
                         innerSource: [],
-                        hasSuperCall: false
+                        containsSuperCall: false
                     };
                     nodes.push((this._currentNode = currentNode));
                     this._nodeMap[elName] = currentNode;
                 }
                 else {
-                    this._currentNode.innerSource.push("'<" + tagName + renderAttributes_1.default(this._elementClassesTemplate, el) + ">'");
+                    this._currentNode.innerSource.push("'<" + tagName + (elAttrs ?
+                        elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') :
+                        '') + ">'");
                 }
                 if (content) {
-                    for (var _i = 0, content_1 = content; _i < content_1.length; _i++) {
-                        var contentNode = content_1[_i];
+                    for (var _b = 0, content_1 = content; _b < content_1.length; _b++) {
+                        var contentNode = content_1[_b];
                         this._handleNode(contentNode, elName || parentNodeName);
                     }
                 }
@@ -89,7 +155,7 @@ var Template = (function () {
             }
             case Parser_1.NodeType.SUPER_CALL: {
                 this._currentNode.innerSource.push("$super['" + (node.elementName || parentNodeName) + "@content'].call(this)");
-                this._currentNode.hasSuperCall = true;
+                this._currentNode.containsSuperCall = true;
                 break;
             }
         }

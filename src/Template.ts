@@ -1,4 +1,5 @@
 import escapeString from 'escape-string';
+import escapeHTML from '@riim/escape-html';
 import {
 	NodeType as BemlNodeType,
 	INode as IBemlNode,
@@ -8,13 +9,15 @@ import {
 	default as Parser
 } from './Parser';
 import selfClosingTags from './selfClosingTags';
-import renderAttributes from './renderAttributes';
+
+let hasOwn = Object.prototype.hasOwnProperty;
+let join = Array.prototype.join;
 
 export interface INode {
 	elementName: string | null;
 	source: Array<string> | null;
 	innerSource: Array<string>;
-	hasSuperCall: boolean;
+	containsSuperCall: boolean;
 }
 
 export interface IRenderer {
@@ -43,6 +46,9 @@ export default class Template {
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
 
+	_attributeListMap: { [elName: string]: Object };
+	_attributeCountMap: { [elName: string]: number };
+
 	constructor(beml: string, opts?: { parent?: Template, blockName?: string }) {
 		let block = new Parser(beml).parse();
 		let blockName = opts && opts.blockName || block.name;
@@ -57,7 +63,7 @@ export default class Template {
 			[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
 			[blockName + elDelimiter, ''];
 
-		let rootNode = { elementName: null, source: null, innerSource: [], hasSuperCall: false };
+		let rootNode = { elementName: null, source: null, innerSource: [], containsSuperCall: false };
 
 		this._currentNode = rootNode;
 		this._nodes = [rootNode];
@@ -77,7 +83,7 @@ export default class Template {
 			if (node.source) {
 				this[name] = Function(`return ${ (node.source as Array<string>).join(' + ') };`) as IElementRenderer;
 
-				if (node.hasSuperCall) {
+				if (node.containsSuperCall) {
 					let inner = Function('$super', `return ${ node.innerSource.join(' + ') };`) as IElementRenderer;
 					let parentElementRendererMap = parent && parent._elementRendererMap;
 					this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
@@ -91,31 +97,104 @@ export default class Template {
 	_handleNode(node: IBemlNode, parentNodeName: string) {
 		switch (node.nodeType) {
 			case BemlNodeType.ELEMENT: {
+				let parent = this.parent;
 				let nodes = this._nodes;
 				let el = node as IBemlElement;
 				let tagName = el.tagName;
 				let elName = el.name;
+				let elAttrs = el.attributes;
 				let content = el.content;
 
 				if (elName) {
+					let attrListMap = this._attributeListMap ||
+						(this._attributeListMap = Object.create(parent && parent._attributeListMap || null) as any);
+					let attrCountMap = this._attributeCountMap ||
+						(this._attributeCountMap = Object.create(parent && parent._attributeCountMap || null) as any);
+					let renderredAttrs: string;
+
+					if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
+						let superCall = elAttrs.superCall;
+						let attrList: Object;
+						let attrCount: number;
+
+						if (superCall) {
+							if (!parent) {
+								throw new TypeError(`Required parent template for "${ superCall.raw }"`);
+							}
+
+							attrList = attrListMap[elName] =
+								Object.create(parent._attributeListMap[superCall.elementName || elName] || null);
+							attrCount = attrCountMap[elName] =
+								parent._attributeCountMap[superCall.elementName || elName] || 0;
+						} else {
+							attrList = attrListMap[elName] = {};
+							attrCount = attrCountMap[elName] = 0;
+						}
+
+						for (let attr of elAttrs.list) {
+							let name = attr.name;
+							let value = attr.value;
+							let index = attrList[name];
+
+							if (index === undefined) {
+								attrList[attrCount] = ` ${ name }="${ value && escapeHTML(escapeString(value)) }"`;
+								attrList[name] = attrCount++;
+								attrCountMap[elName] = attrCount;
+							} else {
+								attrList[index] = ` ${ name }="${ value && escapeHTML(escapeString(value)) }"`;
+								attrList[name] = index;
+							}
+						}
+
+						let attrListZ;
+
+						if (elName.charAt(0) != '_') {
+							let hasAttrClass = hasOwn.call(attrList, 'class');
+
+							attrListZ = { __proto__: attrList, length: attrCount + +!hasAttrClass };
+
+							if (hasAttrClass) {
+								attrListZ[attrList['class']] = ' class="' +
+									this._elementClassesTemplate.join(elName + ' ') +
+									attrList[attrList['class']].slice(8);
+							} else {
+								attrListZ[attrCount] = ` class="${
+									this._elementClassesTemplate.join(elName + ' ').slice(0, -1)
+								}"`;
+							}
+						} else {
+							attrListZ = attrList;
+						}
+
+						renderredAttrs = join.call(attrListZ, '');
+					} else {
+						renderredAttrs = elName.charAt(0) != '_' ?
+							` class="${ this._elementClassesTemplate.join(elName + ' ').slice(0, -1) }"` :
+							'';
+					}
+
 					let currentNode = {
 						elementName: elName,
 						source: [
-							`'<${ tagName }${ renderAttributes(this._elementClassesTemplate, el) }>'`,
+							`'<${ tagName }${ renderredAttrs }>'`,
 							content && content.length ?
 								`this['${ elName }@content']() + '</${ tagName }>'` :
-								(tagName in selfClosingTags ? "''" : `'</${ tagName }>'`)
+								(!content && tagName in selfClosingTags ? "''" : `'</${ tagName }>'`)
 						],
 						innerSource: [],
-						hasSuperCall: false
-					} as INode;
+						containsSuperCall: false
+					};
 
 					nodes.push((this._currentNode = currentNode));
 					this._nodeMap[elName] = currentNode;
 				} else {
-					this._currentNode.innerSource.push(
-						`'<${ tagName }${ renderAttributes(this._elementClassesTemplate, el) }>'`
-					);
+					this._currentNode.innerSource.push(`'<${ tagName }${
+						elAttrs ?
+							elAttrs.list.map(
+								attr => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
+							).join('') :
+							''
+					}>'`);
 				}
 
 				if (content) {
@@ -142,7 +221,7 @@ export default class Template {
 				this._currentNode.innerSource.push(
 					`$super['${ (node as IBemlSuperCall).elementName || parentNodeName }@content'].call(this)`
 				);
-				this._currentNode.hasSuperCall = true;
+				this._currentNode.containsSuperCall = true;
 				break;
 			}
 		}

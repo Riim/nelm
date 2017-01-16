@@ -23,12 +23,17 @@ export interface IBlock extends INode {
     name: string | undefined;
     content: TContent;
 }
+export interface ISuperCall extends INode {
+    nodeType: NodeType.SUPER_CALL;
+    elementName: string | null;
+}
 export interface IElementAttribute {
     name: string;
     value: string;
 }
 export declare type TElementAttributeList = Array<IElementAttribute>;
 export interface IElementAttributes {
+    superCall: ISuperCall | null;
     list: TElementAttributeList;
     at: number;
     raw: string;
@@ -50,10 +55,6 @@ export interface IComment extends INode {
     value: string;
     multiline: boolean;
 }
-export interface ISuperCall extends INode {
-    nodeType: NodeType.SUPER_CALL;
-    elementName: string | null;
-}
 export default class Parser {
     beml: string;
     at: number;
@@ -64,6 +65,7 @@ export default class Parser {
     _readContent(withBrackets: boolean): TContent;
     _readElement(): IElement;
     _readAttributes(): IElementAttributes;
+    _readSuperCall(): ISuperCall | null;
     _readTextNode(): ITextNode;
     _readString(): {
         value: string;
