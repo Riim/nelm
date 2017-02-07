@@ -10,7 +10,6 @@ import {
 } from './Parser';
 import selfClosingTags from './selfClosingTags';
 
-let hasOwn = Object.prototype.hasOwnProperty;
 let join = Array.prototype.join;
 
 export interface INode {
@@ -93,7 +92,7 @@ export default class Template {
 						IElementRenderer;
 				}
 			}
-		}, (this._elementRendererMap = Object.create(parent && parent._elementRendererMap) as IElementRendererMap));
+		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
 	}
 
 	_handleNode(node: IBemlNode, parentNodeName: string) {
@@ -109,9 +108,9 @@ export default class Template {
 
 				if (elName) {
 					let attrListMap = this._attributeListMap ||
-						(this._attributeListMap = Object.create(parent && parent._attributeListMap || null) as any);
+						(this._attributeListMap = { __proto__: parent && parent._attributeListMap || null } as any);
 					let attrCountMap = this._attributeCountMap ||
-						(this._attributeCountMap = Object.create(parent && parent._attributeCountMap || null) as any);
+						(this._attributeCountMap = { __proto__: parent && parent._attributeCountMap || null } as any);
 					let renderredAttrs: string;
 
 					if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
@@ -149,7 +148,7 @@ export default class Template {
 						}
 
 						if (elName.charAt(0) != '_') {
-							let hasAttrClass = hasOwn.call(attrList, 'class');
+							let hasAttrClass = 'class' in attrList;
 
 							attrList = { __proto__: attrList, length: attrCount + +!hasAttrClass };
 

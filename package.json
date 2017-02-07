@@ -1,6 +1,6 @@
 {
   "name": "@riim/beml",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -20,7 +20,7 @@
   "homepage": "https://github.com/Riim/beml#readme",
   "devDependencies": {
     "jest-cli": "^18.1.0",
-    "typescript": "^2.1.5"
+    "typescript": "^2.2.0"
   },
   "dependencies": {
     "@riim/escape-html": "^1.1.0",

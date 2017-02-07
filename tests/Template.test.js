@@ -97,6 +97,20 @@ test('attributes super', () => {
 	`).render()).toBe('<div attr1="value1" attr2="value2" class="block1-x__el1 block1__el1"></div>');
 });
 
+test('attributes super 2', () => {
+	let t1 = new Template(`
+		#block1
+		span/span1 (class=_mod1)
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		span/span1 (super!)
+	`).render()).toBe(
+		'<span class="block1-x__span1 block1__span1 _mod1"></span>'
+	);
+});
+
 test('attributes super.el-name!', () => {
 	let t1 = new Template(`
 		#block1
