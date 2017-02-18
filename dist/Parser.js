@@ -144,7 +144,7 @@ var Parser = (function () {
     Parser.prototype._readAttributes = function () {
         var at = this.at;
         this._next('(');
-        if (this._skipWhitespaces() == ')') {
+        if (this._skipWhitespacesAndComments() == ')') {
             this._next();
             return {
                 superCall: null,
@@ -157,7 +157,7 @@ var Parser = (function () {
         var list = [];
         for (;;) {
             if (!superCall && this.chr == 's' && (superCall = this._readSuperCall())) {
-                this._skipWhitespaces();
+                this._skipWhitespacesAndComments();
             }
             else {
                 var name_1 = this._readName(reAttributeNameOrNothing);
@@ -169,9 +169,9 @@ var Parser = (function () {
                         beml: this.beml
                     };
                 }
-                if (this._skipWhitespaces() == '=') {
+                if (this._skipWhitespacesAndComments() == '=') {
                     this._next();
-                    var next = this._skipWhitespaces();
+                    var next = this._skipWhitespacesAndComments();
                     if (next == "'" || next == '"' || next == '`') {
                         var str = this._readString();
                         list.push({
@@ -198,7 +198,7 @@ var Parser = (function () {
                             next = this._next();
                         }
                     }
-                    this._skipWhitespaces();
+                    this._skipWhitespacesAndComments();
                 }
                 else {
                     list.push({ name: name_1, value: '' });
@@ -210,7 +210,7 @@ var Parser = (function () {
             }
             else if (this.chr == ',') {
                 this._next();
-                this._skipWhitespaces();
+                this._skipWhitespacesAndComments();
             }
             else {
                 throw {
@@ -227,6 +227,22 @@ var Parser = (function () {
             at: at,
             raw: this.beml.slice(at, this.at)
         };
+    };
+    Parser.prototype._skipWhitespacesAndComments = function () {
+        var chr = this.chr;
+        for (;;) {
+            if (chr && chr <= ' ') {
+                chr = this._next();
+            }
+            else if (chr == '/') {
+                this._readComment();
+                chr = this.chr;
+            }
+            else {
+                break;
+            }
+        }
+        return chr;
     };
     Parser.prototype._readSuperCall = function () {
         var at = this.at;

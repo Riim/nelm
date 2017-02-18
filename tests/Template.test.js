@@ -142,3 +142,21 @@ test('attributes super._el-name!', () => {
 		'<div attr3="value3" attr4="value4" class="_mod1"></div><div attr1="value1" attr2="value2" class="_mod2"></div>'
 	);
 });
+
+test('comment in attributes', () => {
+	expect(new Template(`
+		#block1
+		span (/* comment */)
+		span (attr1/* comment */=/* comment */1)
+		span (/* comment */attr1)
+		span (attr1/* comment */, attr2)
+		span (
+			attr1, // comment
+			/* comment */
+			attr2=1
+			// comment
+		)
+	`).render()).toBe(
+		'<span></span><span attr1="1"></span><span attr1=""></span><span attr1="" attr2=""></span><span attr1="" attr2="1"></span>'
+	);
+});

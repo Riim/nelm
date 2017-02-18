@@ -65,6 +65,7 @@ export default class Parser {
     _readContent(withBrackets: boolean): TContent;
     _readElement(): IElement;
     _readAttributes(): IElementAttributes;
+    _skipWhitespacesAndComments(): string;
     _readSuperCall(): ISuperCall | null;
     _readTextNode(): ITextNode;
     _readString(): {

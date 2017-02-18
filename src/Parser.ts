@@ -242,7 +242,7 @@ export default class Parser {
 
 		this._next('(');
 
-		if (this._skipWhitespaces() == ')') {
+		if (this._skipWhitespacesAndComments() == ')') {
 			this._next();
 
 			return {
@@ -258,7 +258,7 @@ export default class Parser {
 
 		for (;;) {
 			if (!superCall && this.chr == 's' && (superCall = this._readSuperCall())) {
-				this._skipWhitespaces();
+				this._skipWhitespacesAndComments();
 			} else {
 				let name = this._readName(reAttributeNameOrNothing);
 
@@ -271,10 +271,10 @@ export default class Parser {
 					};
 				}
 
-				if (this._skipWhitespaces() == '=') {
+				if (this._skipWhitespacesAndComments() == '=') {
 					this._next();
 
-					let next = this._skipWhitespaces();
+					let next = this._skipWhitespacesAndComments();
 
 					if (next == "'" || next == '"' || next == '`') {
 						let str = this._readString();
@@ -307,7 +307,7 @@ export default class Parser {
 						}
 					}
 
-					this._skipWhitespaces();
+					this._skipWhitespacesAndComments();
 				} else {
 					list.push({ name, value: '' });
 				}
@@ -318,7 +318,7 @@ export default class Parser {
 				break;
 			} else if (this.chr == ',') {
 				this._next();
-				this._skipWhitespaces();
+				this._skipWhitespacesAndComments();
 			} else {
 				throw {
 					name: 'SyntaxError',
@@ -335,6 +335,23 @@ export default class Parser {
 			at,
 			raw: this.beml.slice(at, this.at)
 		};
+	}
+
+	_skipWhitespacesAndComments(): string {
+		let chr = this.chr;
+
+		for (;;) {
+			if (chr && chr <= ' ') {
+				chr = this._next();
+			} else if (chr == '/') {
+				this._readComment();
+				chr = this.chr;
+			} else {
+				break;
+			}
+		}
+
+		return chr;
 	}
 
 	_readSuperCall(): ISuperCall | null {
