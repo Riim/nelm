@@ -274,7 +274,7 @@ export default class Parser {
 				if (this._skipWhitespacesAndComments() == '=') {
 					this._next();
 
-					let next = this._skipWhitespacesAndComments();
+					let next = this._skipWhitespaces();
 
 					if (next == "'" || next == '"' || next == '`') {
 						let str = this._readString();

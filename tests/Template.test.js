@@ -147,7 +147,7 @@ test('comment in attributes', () => {
 	expect(new Template(`
 		#block1
 		span (/* comment */)
-		span (attr1/* comment */=/* comment */1)
+		span (attr1/* comment */=1)
 		span (/* comment */attr1)
 		span (attr1/* comment */, attr2)
 		span (

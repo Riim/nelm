@@ -171,7 +171,7 @@ var Parser = (function () {
                 }
                 if (this._skipWhitespacesAndComments() == '=') {
                     this._next();
-                    var next = this._skipWhitespacesAndComments();
+                    var next = this._skipWhitespaces();
                     if (next == "'" || next == '"' || next == '`') {
                         var str = this._readString();
                         list.push({
