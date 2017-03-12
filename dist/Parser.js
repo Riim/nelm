@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var NodeType;
 (function (NodeType) {
     NodeType[NodeType["BLOCK"] = 1] = "BLOCK";
@@ -319,13 +320,13 @@ var Parser = (function () {
                 break;
             }
             case '*': {
-                var stop = false;
+                var stop_1 = false;
                 do {
                     switch (this._next()) {
                         case '*': {
                             if (this._next() == '/') {
                                 this._next();
-                                stop = true;
+                                stop_1 = true;
                             }
                             else {
                                 value += '*' + this.chr;
@@ -344,7 +345,7 @@ var Parser = (function () {
                             value += this.chr;
                         }
                     }
-                } while (!stop);
+                } while (!stop_1);
                 multiline = true;
                 break;
             }
@@ -394,5 +395,4 @@ var Parser = (function () {
     };
     return Parser;
 }());
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Parser;

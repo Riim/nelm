@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var escape_string_1 = require("escape-string");
 var escape_html_1 = require("@riim/escape-html");
 var Parser_1 = require("./Parser");
@@ -166,5 +167,4 @@ var Template = (function () {
     };
     return Template;
 }());
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = Template;

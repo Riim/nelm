@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var selfClosingTags = {
     __proto__: null,
     area: 1,
@@ -31,5 +32,4 @@ var selfClosingTags = {
     stop: 1,
     use: 1
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = selfClosingTags;
