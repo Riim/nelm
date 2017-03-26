@@ -9,10 +9,10 @@ var NodeType;
     NodeType[NodeType["SUPER_CALL"] = 5] = "SUPER_CALL";
 })(NodeType = exports.NodeType || (exports.NodeType = {}));
 var reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
-var reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-var reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
+var reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[a-zA-Z][\-\w]*)?|/g;
+var reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 var reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-var reSuperCallOrNothing = /super(?:\.([_a-zA-Z][\-\w]*))?!|/g;
+var reSuperCallOrNothing = /super(?:\.([a-zA-Z][\-\w]*))?!|/g;
 function normalizeMultilineText(text) {
     return text.trim().replace(/\s*(?:\r\n?|\n)/g, '\n').replace(/\n\s+/g, '\n');
 }
@@ -30,9 +30,8 @@ var Parser = (function () {
         var decl = this.chr == '#' ? this._readBlockDeclaration() : null;
         return {
             nodeType: NodeType.BLOCK,
-            nodeName: '#root',
             declaration: decl,
-            name: decl ? decl.blockName : undefined,
+            name: decl && decl.blockName,
             content: content ? content.concat(this._readContent(false)) : this._readContent(false),
             at: 0,
             raw: this.beml,
@@ -122,10 +121,9 @@ var Parser = (function () {
                 beml: this.beml
             };
         }
-        var elName = this._skipWhitespaces() == '/' ? (this._next(), this._readName(reElementNameOrNothing)) : null;
-        if (elName) {
-            this._skipWhitespaces();
-        }
+        var elNames = this._skipWhitespaces() == '/' ?
+            (this._next(), this._skipWhitespaces(), this._readElementNames()) :
+            null;
         var attrs = this.chr == '(' ? this._readAttributes() : null;
         if (attrs) {
             this._skipWhitespaces();
@@ -133,9 +131,8 @@ var Parser = (function () {
         var content = this.chr == '{' ? this._readContent(true) : null;
         return {
             nodeType: NodeType.ELEMENT,
-            nodeName: elName,
             tagName: tagName,
-            name: elName,
+            names: elNames,
             attributes: attrs,
             content: content,
             at: at,
@@ -365,6 +362,18 @@ var Parser = (function () {
             at: at,
             raw: this.beml.slice(at, this.at)
         };
+    };
+    Parser.prototype._readElementNames = function () {
+        var names = this.chr == ',' ? (this._next(), this._skipWhitespaces(), [null]) : null;
+        for (var name_2; (name_2 = this._readName(reElementNameOrNothing));) {
+            (names || (names = [])).push(name_2);
+            if (this._skipWhitespaces() != ',') {
+                break;
+            }
+            this._next();
+            this._skipWhitespaces();
+        }
+        return names;
     };
     Parser.prototype._readName = function (reNameOrNothing) {
         reNameOrNothing.lastIndex = this.at;

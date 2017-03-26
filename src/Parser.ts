@@ -22,9 +22,8 @@ export type TContent = Array<INode>;
 
 export interface IBlock extends INode {
 	nodeType: NodeType.BLOCK;
-	nodeName: '#root';
 	declaration: IBlockDeclaration | null;
-	name: string | undefined;
+	name: string | null;
 	content: TContent;
 }
 
@@ -49,9 +48,8 @@ export interface IElementAttributes {
 
 export interface IElement extends INode {
 	nodeType: NodeType.ELEMENT;
-	nodeName: string | null;
 	tagName: string;
-	name: string | null;
+	names: Array<string | null> | null;
 	attributes: IElementAttributes | null;
 	content: TContent | null;
 }
@@ -68,10 +66,10 @@ export interface IComment extends INode {
 }
 
 let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
-let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-let reElementNameOrNothing = /[_a-zA-Z][\-\w]*|/g;
+let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[a-zA-Z][\-\w]*)?|/g;
+let reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 let reAttributeNameOrNothing = /[_a-zA-Z][\-\w]*(?::[_a-zA-Z][\-\w]*)?|/g;
-let reSuperCallOrNothing = /super(?:\.([_a-zA-Z][\-\w]*))?!|/g;
+let reSuperCallOrNothing = /super(?:\.([a-zA-Z][\-\w]*))?!|/g;
 
 function normalizeMultilineText(text: string): string {
 	return text.trim().replace(/\s*(?:\r\n?|\n)/g, '\n').replace(/\n\s+/g, '\n');
@@ -100,9 +98,8 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.BLOCK,
-			nodeName: '#root',
 			declaration: decl,
-			name: decl ? decl.blockName : undefined,
+			name: decl && decl.blockName,
 			content: content ? content.concat(this._readContent(false)) : this._readContent(false),
 			at: 0,
 			raw: this.beml,
@@ -211,11 +208,9 @@ export default class Parser {
 			};
 		}
 
-		let elName = this._skipWhitespaces() == '/' ? (this._next(), this._readName(reElementNameOrNothing)) : null;
-
-		if (elName) {
-			this._skipWhitespaces();
-		}
+		let elNames = this._skipWhitespaces() == '/' ?
+			(this._next(), this._skipWhitespaces(), this._readElementNames()) :
+			null;
 
 		let attrs = this.chr == '(' ? this._readAttributes() : null;
 
@@ -227,9 +222,8 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.ELEMENT,
-			nodeName: elName,
 			tagName,
-			name: elName,
+			names: elNames,
 			attributes: attrs,
 			content,
 			at,
@@ -495,6 +489,23 @@ export default class Parser {
 			at,
 			raw: this.beml.slice(at, this.at)
 		};
+	}
+
+	_readElementNames(): Array<string | null> | null {
+		let names = this.chr == ',' ? (this._next(), this._skipWhitespaces(), [null] as Array<string | null>) : null;
+
+		for (let name; (name = this._readName(reElementNameOrNothing));) {
+			(names || (names = [] as Array<string | null>)).push(name);
+
+			if (this._skipWhitespaces() != ',') {
+				break;
+			}
+
+			this._next();
+			this._skipWhitespaces();
+		}
+
+		return names;
 	}
 
 	_readName(reNameOrNothing: RegExp): string | null {
