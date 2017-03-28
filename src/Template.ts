@@ -38,6 +38,8 @@ export default class Template {
 
 	_elementClassesTemplate: Array<string>;
 
+	_tagNameMap: { [elName: string]: string };
+
 	_attributeListMap: { [elName: string]: Object };
 	_attributeCountMap: { [elName: string]: number };
 
@@ -103,11 +105,18 @@ export default class Template {
 
 				if (elNames) {
 					if (elName) {
+						let parent = this.parent;
 						let renderedAttrs: string;
 
-						if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
-							let parent = this.parent;
+						if (tagName) {
+							(this._tagNameMap || (
+								this._tagNameMap = { __proto__: parent && parent._tagNameMap || null } as any
+							))[elName] = tagName;
+						} else {
+							tagName = parent && parent._tagNameMap && parent._tagNameMap[elName] || 'div';
+						}
 
+						if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
 							let attrListMap = this._attributeListMap || (
 								this._attributeListMap = {
 									__proto__: parent && parent._attributeListMap || null
@@ -202,18 +211,19 @@ export default class Template {
 						}
 
 						this._currentNode.innerSource.push(
-							`'<${ tagName }${
+							`'<${ tagName || 'div' }${
 								renderedClasses ?
 									attrs :
 									` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
 							}>'`
 						);
 					} else {
-						this._currentNode.innerSource
-							.push(`'<${ tagName } class="${ this._renderElementClasses(elNames).slice(0, -1) }">'`);
+						this._currentNode.innerSource.push(
+							`'<${ tagName || 'div' } class="${ this._renderElementClasses(elNames).slice(0, -1) }">'`
+						);
 					}
 				} else {
-					this._currentNode.innerSource.push(`'<${ tagName }${
+					this._currentNode.innerSource.push(`'<${ tagName || 'div' }${
 						elAttrs ? elAttrs.list.map(
 							attr => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
 						).join('') : ''
@@ -230,8 +240,8 @@ export default class Template {
 					nodes.pop();
 					this._currentNode = nodes[nodes.length - 1];
 					this._currentNode.innerSource.push(`this['${ elName }']()`);
-				} else if (content || !(tagName in selfClosingTags)) {
-					this._currentNode.innerSource.push(`'</${ tagName }>'`);
+				} else if (content || !tagName || !(tagName in selfClosingTags)) {
+					this._currentNode.innerSource.push(`'</${ tagName || 'div' }>'`);
 				}
 
 				break;

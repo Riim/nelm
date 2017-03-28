@@ -55,8 +55,8 @@ var Parser = (function () {
             raw: '#' + blockName
         };
     };
-    Parser.prototype._readContent = function (withBrackets) {
-        if (withBrackets) {
+    Parser.prototype._readContent = function (brackets) {
+        if (brackets) {
             this._next('{');
         }
         var content = [];
@@ -68,12 +68,8 @@ var Parser = (function () {
                     content.push(this._readTextNode());
                     break;
                 }
-                case '/': {
-                    content.push(this._readComment());
-                    break;
-                }
                 case '': {
-                    if (withBrackets) {
+                    if (brackets) {
                         throw {
                             name: 'SyntaxError',
                             message: 'Missing "}" in compound statement',
@@ -84,7 +80,14 @@ var Parser = (function () {
                     return content;
                 }
                 default: {
-                    if (withBrackets) {
+                    if (this.chr == '/') {
+                        var next = this.beml.charAt(this.at + 1);
+                        if (next == '/' || next == '*') {
+                            content.push(this._readComment());
+                            break;
+                        }
+                    }
+                    if (brackets) {
                         if (this.chr == '}') {
                             this._next();
                             return content;
@@ -113,7 +116,10 @@ var Parser = (function () {
     Parser.prototype._readElement = function () {
         var at = this.at;
         var tagName = this._readName(reTagNameOrNothing);
-        if (!tagName) {
+        var elNames = (tagName ? this._skipWhitespaces() : this.chr) == '/' ?
+            (this._next(), this._skipWhitespaces(), this._readElementNames()) :
+            null;
+        if (!tagName && !elNames) {
             throw {
                 name: 'SyntaxError',
                 message: 'Expected tag name',
@@ -121,9 +127,6 @@ var Parser = (function () {
                 beml: this.beml
             };
         }
-        var elNames = this._skipWhitespaces() == '/' ?
-            (this._next(), this._skipWhitespaces(), this._readElementNames()) :
-            null;
         var attrs = this.chr == '(' ? this._readAttributes() : null;
         if (attrs) {
             this._skipWhitespaces();

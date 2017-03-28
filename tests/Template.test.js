@@ -37,8 +37,8 @@ test('overriding element', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		div/el1 { 'other text' }
-	`).render()).toBe('<div class="block1-x__el1 block1__el1">other text</div><br>');
+		/el1 { 'other text' }
+	`).render()).toBe('<span class="block1-x__el1 block1__el1">other text</span><br>');
 });
 
 test('content super', () => {
@@ -87,8 +87,8 @@ test('attributes super', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		div/el1 (super!)
-	`).render()).toBe('<div attr1="value1" attr2="value2" class="block1-x__el1 block1__el1"></div>');
+		/el1 (super!)
+	`).render()).toBe('<span attr1="value1" attr2="value2" class="block1-x__el1 block1__el1"></span>');
 });
 
 test('attributes super 2', () => {
@@ -99,10 +99,8 @@ test('attributes super 2', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		span/span1 (super!)
-	`).render()).toBe(
-		'<span class="block1-x__span1 block1__span1 _mod1"></span>'
-	);
+		/span1 (super!)
+	`).render()).toBe('<span class="block1-x__span1 block1__span1 _mod1"></span>');
 });
 
 test('attributes super.el-name!', () => {

@@ -39,7 +39,7 @@ export interface IElementAttributes {
 }
 export interface IElement extends INode {
     nodeType: NodeType.ELEMENT;
-    tagName: string;
+    tagName: string | null;
     names: Array<string | null> | null;
     attributes: IElementAttributes | null;
     content: TContent | null;
@@ -60,7 +60,7 @@ export default class Parser {
     constructor(beml: string);
     parse(): IBlock;
     _readBlockDeclaration(): IBlockDeclaration;
-    _readContent(withBrackets: boolean): TContent;
+    _readContent(brackets: boolean): TContent;
     _readElement(): IElement;
     _readAttributes(): IElementAttributes;
     _skipWhitespacesAndComments(): string;

@@ -51,9 +51,15 @@ var Template = (function () {
                 var content = el.content;
                 if (elNames) {
                     if (elName) {
+                        var parent_1 = this.parent;
                         var renderedAttrs = void 0;
+                        if (tagName) {
+                            (this._tagNameMap || (this._tagNameMap = { __proto__: parent_1 && parent_1._tagNameMap || null }))[elName] = tagName;
+                        }
+                        else {
+                            tagName = parent_1 && parent_1._tagNameMap && parent_1._tagNameMap[elName] || 'div';
+                        }
                         if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
-                            var parent_1 = this.parent;
                             var attrListMap = this._attributeListMap || (this._attributeListMap = {
                                 __proto__: parent_1 && parent_1._attributeListMap || null
                             });
@@ -135,17 +141,16 @@ var Template = (function () {
                                 attrs += " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
                             }
                         }
-                        this._currentNode.innerSource.push("'<" + tagName + (renderedClasses ?
+                        this._currentNode.innerSource.push("'<" + (tagName || 'div') + (renderedClasses ?
                             attrs :
                             " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"" + attrs) + ">'");
                     }
                     else {
-                        this._currentNode.innerSource
-                            .push("'<" + tagName + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
+                        this._currentNode.innerSource.push("'<" + (tagName || 'div') + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
                     }
                 }
                 else {
-                    this._currentNode.innerSource.push("'<" + tagName + (elAttrs ? elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') : '') + ">'");
+                    this._currentNode.innerSource.push("'<" + (tagName || 'div') + (elAttrs ? elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') : '') + ">'");
                 }
                 if (content) {
                     for (var _d = 0, content_1 = content; _d < content_1.length; _d++) {
@@ -158,8 +163,8 @@ var Template = (function () {
                     this._currentNode = nodes[nodes.length - 1];
                     this._currentNode.innerSource.push("this['" + elName + "']()");
                 }
-                else if (content || !(tagName in selfClosingTags_1.default)) {
-                    this._currentNode.innerSource.push("'</" + tagName + ">'");
+                else if (content || !tagName || !(tagName in selfClosingTags_1.default)) {
+                    this._currentNode.innerSource.push("'</" + (tagName || 'div') + ">'");
                 }
                 break;
             }

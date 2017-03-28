@@ -17,6 +17,9 @@ export interface IElementRendererMap {
 export default class Template {
     parent: Template | null;
     _elementClassesTemplate: Array<string>;
+    _tagNameMap: {
+        [elName: string]: string;
+    };
     _attributeListMap: {
         [elName: string]: Object;
     };

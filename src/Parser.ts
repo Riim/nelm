@@ -48,7 +48,7 @@ export interface IElementAttributes {
 
 export interface IElement extends INode {
 	nodeType: NodeType.ELEMENT;
-	tagName: string;
+	tagName: string | null;
 	names: Array<string | null> | null;
 	attributes: IElementAttributes | null;
 	content: TContent | null;
@@ -129,8 +129,8 @@ export default class Parser {
 		};
 	}
 
-	_readContent(withBrackets: boolean): TContent {
-		if (withBrackets) {
+	_readContent(brackets: boolean): TContent {
+		if (brackets) {
 			this._next('{');
 		}
 
@@ -144,12 +144,8 @@ export default class Parser {
 					content.push(this._readTextNode());
 					break;
 				}
-				case '/': {
-					content.push(this._readComment());
-					break;
-				}
 				case '': {
-					if (withBrackets) {
+					if (brackets) {
 						throw {
 							name: 'SyntaxError',
 							message: 'Missing "}" in compound statement',
@@ -161,7 +157,16 @@ export default class Parser {
 					return content;
 				}
 				default: {
-					if (withBrackets) {
+					if (this.chr == '/') {
+						let next = this.beml.charAt(this.at + 1);
+
+						if (next == '/' || next == '*') {
+							content.push(this._readComment());
+							break;
+						}
+					}
+
+					if (brackets) {
 						if (this.chr == '}') {
 							this._next();
 							return content;
@@ -199,7 +204,11 @@ export default class Parser {
 		let at = this.at;
 		let tagName = this._readName(reTagNameOrNothing);
 
-		if (!tagName) {
+		let elNames = (tagName ? this._skipWhitespaces() : this.chr) == '/' ?
+			(this._next(), this._skipWhitespaces(), this._readElementNames()) :
+			null;
+
+		if (!tagName && !elNames) {
 			throw {
 				name: 'SyntaxError',
 				message: 'Expected tag name',
@@ -207,10 +216,6 @@ export default class Parser {
 				beml: this.beml
 			};
 		}
-
-		let elNames = this._skipWhitespaces() == '/' ?
-			(this._next(), this._skipWhitespaces(), this._readElementNames()) :
-			null;
 
 		let attrs = this.chr == '(' ? this._readAttributes() : null;
 
