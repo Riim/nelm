@@ -7,13 +7,13 @@ export declare enum NodeType {
 }
 export interface INode {
     nodeType: NodeType;
-    at: number;
-    raw: string;
+    at?: number;
+    raw?: string;
 }
 export interface IBlockDeclaration {
     blockName: string;
-    at: number;
-    raw: string;
+    at?: number;
+    raw?: string;
 }
 export declare type TContent = Array<INode>;
 export interface IBlock extends INode {
@@ -34,11 +34,12 @@ export declare type TElementAttributeList = Array<IElementAttribute>;
 export interface IElementAttributes {
     superCall: ISuperCall | null;
     list: TElementAttributeList;
-    at: number;
-    raw: string;
+    at?: number;
+    raw?: string;
 }
 export interface IElement extends INode {
     nodeType: NodeType.ELEMENT;
+    isHelper: boolean;
     tagName: string | null;
     names: Array<string | null> | null;
     attributes: IElementAttributes | null;

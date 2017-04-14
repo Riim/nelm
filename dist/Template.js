@@ -42,16 +42,36 @@ var Template = (function () {
     Template.prototype._handleNode = function (node, parentElementName) {
         switch (node.nodeType) {
             case Parser_1.NodeType.ELEMENT: {
+                var parent_1 = this.parent;
                 var nodes = this._nodes;
                 var el = node;
                 var tagName = el.tagName;
                 var elNames = el.names;
                 var elName = elNames && elNames[0];
+                if (el.isHelper) {
+                    var helper = Template.helpers[tagName || elName && parent_1 && parent_1._tagNameMap && parent_1._tagNameMap[elName] || 'div'];
+                    var content_1 = helper(el);
+                    if (!content_1) {
+                        return;
+                    }
+                    if (content_1.length == 1 && content_1[0].nodeType == Parser_1.NodeType.ELEMENT) {
+                        el = content_1[0];
+                        tagName = el.tagName;
+                        elNames = el.names;
+                        elName = elNames && elNames[0];
+                    }
+                    else {
+                        for (var _i = 0, content_2 = content_1; _i < content_2.length; _i++) {
+                            var contentNode = content_2[_i];
+                            this._handleNode(contentNode, elName || parentElementName);
+                        }
+                        return;
+                    }
+                }
                 var elAttrs = el.attributes;
                 var content = el.content;
                 if (elNames) {
                     if (elName) {
-                        var parent_1 = this.parent;
                         var renderedAttrs = void 0;
                         if (tagName) {
                             (this._tagNameMap || (this._tagNameMap = { __proto__: parent_1 && parent_1._tagNameMap || null }))[elName] = tagName;
@@ -81,8 +101,8 @@ var Template = (function () {
                                 attrList = attrListMap[elName] = {};
                                 attrCount = attrCountMap[elName] = 0;
                             }
-                            for (var _i = 0, _a = elAttrs.list; _i < _a.length; _i++) {
-                                var attr = _a[_i];
+                            for (var _a = 0, _b = elAttrs.list; _a < _b.length; _a++) {
+                                var attr = _b[_a];
                                 var name_1 = attr.name;
                                 var value = attr.value;
                                 var index = attrList[name_1];
@@ -130,8 +150,8 @@ var Template = (function () {
                     else if (elAttrs && elAttrs.list.length) {
                         var renderedClasses = void 0;
                         var attrs = '';
-                        for (var _b = 0, _c = elAttrs.list; _b < _c.length; _b++) {
-                            var attr = _c[_b];
+                        for (var _c = 0, _d = elAttrs.list; _c < _d.length; _c++) {
+                            var attr = _d[_c];
                             var value = attr.value;
                             if (attr.name == 'class') {
                                 renderedClasses = this._renderElementClasses(elNames);
@@ -153,8 +173,8 @@ var Template = (function () {
                     this._currentNode.innerSource.push("'<" + (tagName || 'div') + (elAttrs ? elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') : '') + ">'");
                 }
                 if (content) {
-                    for (var _d = 0, content_1 = content; _d < content_1.length; _d++) {
-                        var contentNode = content_1[_d];
+                    for (var _e = 0, content_3 = content; _e < content_3.length; _e++) {
+                        var contentNode = content_3[_e];
                         this._handleNode(contentNode, elName || parentElementName);
                     }
                 }
@@ -197,4 +217,7 @@ var Template = (function () {
     };
     return Template;
 }());
+Template.helpers = {
+    region: function (el) { return el.content; }
+};
 exports.default = Template;

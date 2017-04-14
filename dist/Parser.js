@@ -115,6 +115,10 @@ var Parser = (function () {
     };
     Parser.prototype._readElement = function () {
         var at = this.at;
+        var isHelper = this.chr == '@';
+        if (isHelper) {
+            this._next();
+        }
         var tagName = this._readName(reTagNameOrNothing);
         var elNames = (tagName ? this._skipWhitespaces() : this.chr) == '/' ?
             (this._next(), this._skipWhitespaces(), this._readElementNames()) :
@@ -134,6 +138,7 @@ var Parser = (function () {
         var content = this.chr == '{' ? this._readContent(true) : null;
         return {
             nodeType: NodeType.ELEMENT,
+            isHelper: isHelper,
             tagName: tagName,
             names: elNames,
             attributes: attrs,

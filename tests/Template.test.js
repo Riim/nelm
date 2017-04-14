@@ -1,3 +1,4 @@
+let NodeType = require('../dist/Parser').NodeType;
 let Template = require('../dist/Template').default;
 
 test('simple template', () => {
@@ -151,4 +152,34 @@ test('comment in attributes', () => {
 	`).render()).toBe(
 		'<span></span><span attr1="1"></span><span attr1=""></span><span attr1="" attr2=""></span><span attr1="" attr2="1"></span>'
 	);
+});
+
+test('helper 1', () => {
+	Template.helpers.test = (el) => {
+		return [
+			{ nodeType: NodeType.TEXT, value: '1' },
+			{ nodeType: NodeType.TEXT, value: '2' },
+			{ nodeType: NodeType.TEXT, value: '3' }
+		];
+	};
+
+	expect(new Template(`
+		#block1
+		span { @test }
+	`).render()).toBe('<span>123</span>');
+});
+
+test('helper 2', () => {
+	Template.helpers.test = (el) => {
+		return [
+			{ nodeType: NodeType.TEXT, value: '[' },
+			...el.content,
+			{ nodeType: NodeType.TEXT, value: ']' }
+		];
+	};
+
+	expect(new Template(`
+		#block1
+		span { @test { div } }
+	`).render()).toBe('<span>[<div></div>]</span>');
 });

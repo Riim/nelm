@@ -1,4 +1,4 @@
-import { INode as IBemlNode } from './Parser';
+import { INode as IBemlNode, TContent as TBemlContent, IElement as IBemlElement } from './Parser';
 export interface INode {
     elementName: string | null;
     superCall: boolean;
@@ -15,6 +15,9 @@ export interface IElementRendererMap {
     [elName: string]: IElementRenderer;
 }
 export default class Template {
+    static helpers: {
+        [name: string]: (el: IBemlElement) => TBemlContent | null;
+    };
     parent: Template | null;
     _elementClassesTemplate: Array<string>;
     _tagNameMap: {

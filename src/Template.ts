@@ -3,6 +3,7 @@ import escapeHTML from '@riim/escape-html';
 import {
 	NodeType as BemlNodeType,
 	INode as IBemlNode,
+	TContent as TBemlContent,
 	IElement as IBemlElement,
 	ITextNode as IBemlTextNode,
 	ISuperCall as IBemlSuperCall,
@@ -34,6 +35,10 @@ export interface IElementRendererMap {
 let elDelimiter = '__';
 
 export default class Template {
+	static helpers: { [name: string]: (el: IBemlElement) => TBemlContent | null } = {
+		region: el => el.content
+	};
+
 	parent: Template | null;
 
 	_elementClassesTemplate: Array<string>;
@@ -95,17 +100,43 @@ export default class Template {
 	_handleNode(node: IBemlNode, parentElementName?: string) {
 		switch (node.nodeType) {
 			case BemlNodeType.ELEMENT: {
+				let parent = this.parent;
 				let nodes = this._nodes;
 				let el = node as IBemlElement;
 				let tagName = el.tagName;
 				let elNames = el.names;
 				let elName = elNames && elNames[0];
+
+				if (el.isHelper) {
+					let helper = Template.helpers[
+						tagName || elName && parent && parent._tagNameMap && parent._tagNameMap[elName] || 'div'
+					];
+
+					let content = helper(el);
+
+					if (!content) {
+						return;
+					}
+
+					if (content.length == 1 && content[0].nodeType == BemlNodeType.ELEMENT) {
+						el = content[0] as IBemlElement;
+						tagName = el.tagName;
+						elNames = el.names;
+						elName = elNames && elNames[0];
+					} else {
+						for (let contentNode of content) {
+							this._handleNode(contentNode, elName || parentElementName);
+						}
+
+						return;
+					}
+				}
+
 				let elAttrs = el.attributes;
 				let content = el.content;
 
 				if (elNames) {
 					if (elName) {
-						let parent = this.parent;
 						let renderedAttrs: string;
 
 						if (tagName) {

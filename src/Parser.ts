@@ -8,14 +8,14 @@ export enum NodeType {
 
 export interface INode {
 	nodeType: NodeType;
-	at: number;
-	raw: string;
+	at?: number;
+	raw?: string;
 }
 
 export interface IBlockDeclaration {
 	blockName: string;
-	at: number;
-	raw: string;
+	at?: number;
+	raw?: string;
 }
 
 export type TContent = Array<INode>;
@@ -42,12 +42,13 @@ export type TElementAttributeList = Array<IElementAttribute>;
 export interface IElementAttributes {
 	superCall: ISuperCall | null;
 	list: TElementAttributeList;
-	at: number;
-	raw: string;
+	at?: number;
+	raw?: string;
 }
 
 export interface IElement extends INode {
 	nodeType: NodeType.ELEMENT;
+	isHelper: boolean;
 	tagName: string | null;
 	names: Array<string | null> | null;
 	attributes: IElementAttributes | null;
@@ -202,6 +203,12 @@ export default class Parser {
 
 	_readElement(): IElement {
 		let at = this.at;
+		let isHelper = this.chr == '@';
+
+		if (isHelper) {
+			this._next();
+		}
+
 		let tagName = this._readName(reTagNameOrNothing);
 
 		let elNames = (tagName ? this._skipWhitespaces() : this.chr) == '/' ?
@@ -227,6 +234,7 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.ELEMENT,
+			isHelper,
 			tagName,
 			names: elNames,
 			attributes: attrs,
