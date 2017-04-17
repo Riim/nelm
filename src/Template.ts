@@ -36,7 +36,7 @@ let elDelimiter = '__';
 
 export default class Template {
 	static helpers: { [name: string]: (el: IBemlElement) => TBemlContent | null } = {
-		region: el => el.content
+		section: el => el.content
 	};
 
 	parent: Template | null;

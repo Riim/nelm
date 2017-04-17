@@ -218,6 +218,6 @@ var Template = (function () {
     return Template;
 }());
 Template.helpers = {
-    region: function (el) { return el.content; }
+    section: function (el) { return el.content; }
 };
 exports.default = Template;
