@@ -1,19 +1,19 @@
 import escapeString from 'escape-string';
 import escapeHTML from '@riim/escape-html';
 import {
-	NodeType as BemlNodeType,
-	INode as IBemlNode,
-	TContent as TBemlContent,
-	IElement as IBemlElement,
-	ITextNode as IBemlTextNode,
-	ISuperCall as IBemlSuperCall,
+	NodeType,
+	INode,
+	TContent,
+	IElement,
+	ITextNode,
+	ISuperCall,
 	default as Parser
 } from './Parser';
 import selfClosingTags from './selfClosingTags';
 
 let join = Array.prototype.join;
 
-export interface INode {
+export interface ITemplateNode {
 	elementName: string | null;
 	superCall: boolean;
 	source: Array<string> | null;
@@ -35,7 +35,7 @@ export interface IElementRendererMap {
 let elDelimiter = '__';
 
 export default class Template {
-	static helpers: { [name: string]: (el: IBemlElement) => TBemlContent | null } = {
+	static helpers: { [name: string]: (el: IElement) => TContent | null } = {
 		section: el => el.content
 	};
 
@@ -48,9 +48,9 @@ export default class Template {
 	_attributeListMap: { [elName: string]: Object };
 	_attributeCountMap: { [elName: string]: number };
 
-	_currentNode: INode;
-	_nodes: Array<INode>;
-	_nodeMap: { [elName: string]: INode };
+	_currentNode: ITemplateNode;
+	_nodes: Array<ITemplateNode>;
+	_nodeMap: { [elName: string]: ITemplateNode };
 
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
@@ -70,7 +70,7 @@ export default class Template {
 			[blockName + elDelimiter, ''];
 
 		this._nodes = [(this._currentNode = { elementName: null, superCall: false, source: null, innerSource: [] })];
-		let nodeMap = this._nodeMap = {} as { [elName: string]: INode };
+		let nodeMap = this._nodeMap = {} as { [elName: string]: ITemplateNode };
 
 		for (let node of block.content) {
 			this._handleNode(node);
@@ -97,12 +97,12 @@ export default class Template {
 		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
 	}
 
-	_handleNode(node: IBemlNode, parentElementName?: string) {
+	_handleNode(node: INode, parentElementName?: string) {
 		switch (node.nodeType) {
-			case BemlNodeType.ELEMENT: {
+			case NodeType.ELEMENT: {
 				let parent = this.parent;
 				let nodes = this._nodes;
-				let el = node as IBemlElement;
+				let el = node as IElement;
 				let tagName = el.tagName;
 				let elNames = el.names;
 				let elName = elNames && elNames[0];
@@ -118,8 +118,8 @@ export default class Template {
 						return;
 					}
 
-					if (content.length == 1 && content[0].nodeType == BemlNodeType.ELEMENT) {
-						el = content[0] as IBemlElement;
+					if (content.length == 1 && content[0].nodeType == NodeType.ELEMENT) {
+						el = content[0] as IElement;
 						tagName = el.tagName;
 						elNames = el.names;
 						elName = elNames && elNames[0];
@@ -277,13 +277,13 @@ export default class Template {
 
 				break;
 			}
-			case BemlNodeType.TEXT: {
-				this._currentNode.innerSource.push(`'${ escapeString((node as IBemlTextNode).value) }'`);
+			case NodeType.TEXT: {
+				this._currentNode.innerSource.push(`'${ escapeString((node as ITextNode).value) }'`);
 				break;
 			}
-			case BemlNodeType.SUPER_CALL: {
+			case NodeType.SUPER_CALL: {
 				this._currentNode.innerSource.push(
-					`$super['${ (node as IBemlSuperCall).elementName || parentElementName }@content'].call(this)`
+					`$super['${ (node as ISuperCall).elementName || parentElementName }@content'].call(this)`
 				);
 				this._currentNode.superCall = true;
 				break;

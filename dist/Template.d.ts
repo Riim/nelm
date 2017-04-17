@@ -1,5 +1,5 @@
-import { INode as IBemlNode, TContent as TBemlContent, IElement as IBemlElement } from './Parser';
-export interface INode {
+import { INode, TContent, IElement } from './Parser';
+export interface ITemplateNode {
     elementName: string | null;
     superCall: boolean;
     source: Array<string> | null;
@@ -16,7 +16,7 @@ export interface IElementRendererMap {
 }
 export default class Template {
     static helpers: {
-        [name: string]: (el: IBemlElement) => TBemlContent | null;
+        [name: string]: (el: IElement) => TContent | null;
     };
     parent: Template | null;
     _elementClassesTemplate: Array<string>;
@@ -29,10 +29,10 @@ export default class Template {
     _attributeCountMap: {
         [elName: string]: number;
     };
-    _currentNode: INode;
-    _nodes: Array<INode>;
+    _currentNode: ITemplateNode;
+    _nodes: Array<ITemplateNode>;
     _nodeMap: {
-        [elName: string]: INode;
+        [elName: string]: ITemplateNode;
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
@@ -40,7 +40,7 @@ export default class Template {
         parent?: Template;
         blockName?: string;
     });
-    _handleNode(node: IBemlNode, parentElementName?: string): void;
+    _handleNode(node: INode, parentElementName?: string): void;
     _renderElementClasses(elNames: Array<string | null>): string;
     extend(beml: string, opts?: {
         blockName?: string;
