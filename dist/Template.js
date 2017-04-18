@@ -17,25 +17,25 @@ var Template = (function () {
         this._elementClassesTemplate = parent ?
             [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
             [blockName + elDelimiter, ''];
-        this._nodes = [(this._currentNode = { elementName: null, superCall: false, source: null, innerSource: [] })];
-        var nodeMap = this._nodeMap = {};
+        this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
+        var elMap = this._elementMap = {};
         for (var _i = 0, _a = block.content; _i < _a.length; _i++) {
             var node = _a[_i];
             this._handleNode(node);
         }
         this._renderer = parent ?
             parent._renderer :
-            Function("return " + this._currentNode.innerSource.join(' + ') + ";");
-        Object.keys(nodeMap).forEach(function (name) {
-            var node = nodeMap[name];
-            this[name] = Function("return " + node.source.join(' + ') + ";");
-            if (node.superCall) {
-                var inner_1 = Function('$super', "return " + (node.innerSource.join(' + ') || "''") + ";");
+            Function("return " + this._currentElement.innerSource.join(' + ') + ";");
+        Object.keys(elMap).forEach(function (name) {
+            var el = elMap[name];
+            this[name] = Function("return " + el.source.join(' + ') + ";");
+            if (el.superCall) {
+                var inner_1 = Function('$super', "return " + (el.innerSource.join(' + ') || "''") + ";");
                 var parentElementRendererMap_1 = parent && parent._elementRendererMap;
                 this[name + '@content'] = function () { return inner_1.call(this, parentElementRendererMap_1); };
             }
             else {
-                this[name + '@content'] = Function("return " + (node.innerSource.join(' + ') || "''") + ";");
+                this[name + '@content'] = Function("return " + (el.innerSource.join(' + ') || "''") + ";");
             }
         }, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap }));
     }
@@ -43,13 +43,19 @@ var Template = (function () {
         switch (node.nodeType) {
             case Parser_1.NodeType.ELEMENT: {
                 var parent_1 = this.parent;
-                var nodes = this._nodes;
+                var els = this._elements;
                 var el = node;
                 var tagName = el.tagName;
                 var elNames = el.names;
                 var elName = elNames && elNames[0];
                 if (el.isHelper) {
-                    var helper = Template.helpers[tagName || elName && parent_1 && parent_1._tagNameMap && parent_1._tagNameMap[elName] || 'div'];
+                    if (!tagName) {
+                        throw new TypeError('tagName is required');
+                    }
+                    var helper = Template.helpers[tagName];
+                    if (!helper) {
+                        throw new TypeError("Helper \"" + tagName + "\" is not defined");
+                    }
                     var content_1 = helper(el);
                     if (!content_1) {
                         return;
@@ -72,13 +78,13 @@ var Template = (function () {
                 var content = el.content;
                 if (elNames) {
                     if (elName) {
-                        var renderedAttrs = void 0;
                         if (tagName) {
                             (this._tagNameMap || (this._tagNameMap = { __proto__: parent_1 && parent_1._tagNameMap || null }))[elName] = tagName;
                         }
                         else {
                             tagName = parent_1 && parent_1._tagNameMap && parent_1._tagNameMap[elName] || 'div';
                         }
+                        var renderedAttrs = void 0;
                         if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
                             var attrListMap = this._attributeListMap || (this._attributeListMap = {
                                 __proto__: parent_1 && parent_1._attributeListMap || null
@@ -133,8 +139,8 @@ var Template = (function () {
                         else {
                             renderedAttrs = " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"";
                         }
-                        var currentNode = {
-                            elementName: elName,
+                        var currentEl = {
+                            name: elName,
                             superCall: false,
                             source: [
                                 "'<" + tagName + renderedAttrs + ">'",
@@ -144,8 +150,8 @@ var Template = (function () {
                             ],
                             innerSource: []
                         };
-                        nodes.push((this._currentNode = currentNode));
-                        this._nodeMap[elName] = currentNode;
+                        els.push((this._currentElement = currentEl));
+                        this._elementMap[elName] = currentEl;
                     }
                     else if (elAttrs && elAttrs.list.length) {
                         var renderedClasses = void 0;
@@ -161,16 +167,16 @@ var Template = (function () {
                                 attrs += " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
                             }
                         }
-                        this._currentNode.innerSource.push("'<" + (tagName || 'div') + (renderedClasses ?
+                        this._currentElement.innerSource.push("'<" + (tagName || 'div') + (renderedClasses ?
                             attrs :
                             " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"" + attrs) + ">'");
                     }
                     else {
-                        this._currentNode.innerSource.push("'<" + (tagName || 'div') + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
+                        this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
                     }
                 }
                 else {
-                    this._currentNode.innerSource.push("'<" + (tagName || 'div') + (elAttrs ? elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') : '') + ">'");
+                    this._currentElement.innerSource.push("'<" + (tagName || 'div') + (elAttrs ? elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') : '') + ">'");
                 }
                 if (content) {
                     for (var _e = 0, content_3 = content; _e < content_3.length; _e++) {
@@ -179,22 +185,22 @@ var Template = (function () {
                     }
                 }
                 if (elName) {
-                    nodes.pop();
-                    this._currentNode = nodes[nodes.length - 1];
-                    this._currentNode.innerSource.push("this['" + elName + "']()");
+                    els.pop();
+                    this._currentElement = els[els.length - 1];
+                    this._currentElement.innerSource.push("this['" + elName + "']()");
                 }
                 else if (content || !tagName || !(tagName in selfClosingTags_1.default)) {
-                    this._currentNode.innerSource.push("'</" + (tagName || 'div') + ">'");
+                    this._currentElement.innerSource.push("'</" + (tagName || 'div') + ">'");
                 }
                 break;
             }
             case Parser_1.NodeType.TEXT: {
-                this._currentNode.innerSource.push("'" + escape_string_1.default(node.value) + "'");
+                this._currentElement.innerSource.push("'" + escape_string_1.default(node.value) + "'");
                 break;
             }
             case Parser_1.NodeType.SUPER_CALL: {
-                this._currentNode.innerSource.push("$super['" + (node.elementName || parentElementName) + "@content'].call(this)");
-                this._currentNode.superCall = true;
+                this._currentElement.innerSource.push("$super['" + (node.elementName || parentElementName) + "@content'].call(this)");
+                this._currentElement.superCall = true;
                 break;
             }
         }

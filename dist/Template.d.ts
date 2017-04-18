@@ -1,6 +1,6 @@
 import { INode, TContent, IElement } from './Parser';
-export interface ITemplateNode {
-    elementName: string | null;
+export interface ITemplateElement {
+    name: string | null;
     superCall: boolean;
     source: Array<string> | null;
     innerSource: Array<string>;
@@ -29,10 +29,10 @@ export default class Template {
     _attributeCountMap: {
         [elName: string]: number;
     };
-    _currentNode: ITemplateNode;
-    _nodes: Array<ITemplateNode>;
-    _nodeMap: {
-        [elName: string]: ITemplateNode;
+    _currentElement: ITemplateElement;
+    _elements: Array<ITemplateElement>;
+    _elementMap: {
+        [elName: string]: ITemplateElement;
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;

@@ -13,8 +13,8 @@ import selfClosingTags from './selfClosingTags';
 
 let join = Array.prototype.join;
 
-export interface ITemplateNode {
-	elementName: string | null;
+export interface ITemplateElement {
+	name: string | null;
 	superCall: boolean;
 	source: Array<string> | null;
 	innerSource: Array<string>;
@@ -48,9 +48,9 @@ export default class Template {
 	_attributeListMap: { [elName: string]: Object };
 	_attributeCountMap: { [elName: string]: number };
 
-	_currentNode: ITemplateNode;
-	_nodes: Array<ITemplateNode>;
-	_nodeMap: { [elName: string]: ITemplateNode };
+	_currentElement: ITemplateElement;
+	_elements: Array<ITemplateElement>;
+	_elementMap: { [elName: string]: ITemplateElement };
 
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
@@ -69,8 +69,8 @@ export default class Template {
 			[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
 			[blockName + elDelimiter, ''];
 
-		this._nodes = [(this._currentNode = { elementName: null, superCall: false, source: null, innerSource: [] })];
-		let nodeMap = this._nodeMap = {} as { [elName: string]: ITemplateNode };
+		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
+		let elMap = this._elementMap = {} as { [elName: string]: ITemplateElement };
 
 		for (let node of block.content) {
 			this._handleNode(node);
@@ -78,20 +78,20 @@ export default class Template {
 
 		this._renderer = parent ?
 			parent._renderer :
-			Function(`return ${ this._currentNode.innerSource.join(' + ') };`) as IRenderer;
+			Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as IRenderer;
 
-		Object.keys(nodeMap).forEach(function(this: IElementRendererMap, name: string) {
-			let node = nodeMap[name];
+		Object.keys(elMap).forEach(function(this: IElementRendererMap, name: string) {
+			let el = elMap[name];
 
-			this[name] = Function(`return ${ (node.source as Array<string>).join(' + ') };`) as IElementRenderer;
+			this[name] = Function(`return ${ (el.source as Array<string>).join(' + ') };`) as IElementRenderer;
 
-			if (node.superCall) {
-				let inner = Function('$super', `return ${ node.innerSource.join(' + ') || "''" };`) as IElementRenderer;
+			if (el.superCall) {
+				let inner = Function('$super', `return ${ el.innerSource.join(' + ') || "''" };`) as IElementRenderer;
 				let parentElementRendererMap = parent && parent._elementRendererMap;
 				this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
 			} else {
 				this[name + '@content'] = Function(
-					`return ${ node.innerSource.join(' + ') || "''" };`
+					`return ${ el.innerSource.join(' + ') || "''" };`
 				) as IElementRenderer;
 			}
 		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
@@ -101,16 +101,22 @@ export default class Template {
 		switch (node.nodeType) {
 			case NodeType.ELEMENT: {
 				let parent = this.parent;
-				let nodes = this._nodes;
+				let els = this._elements;
 				let el = node as IElement;
 				let tagName = el.tagName;
 				let elNames = el.names;
 				let elName = elNames && elNames[0];
 
 				if (el.isHelper) {
-					let helper = Template.helpers[
-						tagName || elName && parent && parent._tagNameMap && parent._tagNameMap[elName] || 'div'
-					];
+					if (!tagName) {
+						throw new TypeError('tagName is required');
+					}
+
+					let helper = Template.helpers[tagName];
+
+					if (!helper) {
+						throw new TypeError(`Helper "${ tagName }" is not defined`);
+					}
 
 					let content = helper(el);
 
@@ -137,8 +143,6 @@ export default class Template {
 
 				if (elNames) {
 					if (elName) {
-						let renderedAttrs: string;
-
 						if (tagName) {
 							(this._tagNameMap || (
 								this._tagNameMap = { __proto__: parent && parent._tagNameMap || null } as any
@@ -146,6 +150,8 @@ export default class Template {
 						} else {
 							tagName = parent && parent._tagNameMap && parent._tagNameMap[elName] || 'div';
 						}
+
+						let renderedAttrs: string;
 
 						if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
 							let attrListMap = this._attributeListMap || (
@@ -212,8 +218,8 @@ export default class Template {
 							renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
 						}
 
-						let currentNode = {
-							elementName: elName,
+						let currentEl = {
+							name: elName,
 							superCall: false,
 							source: [
 								`'<${ tagName }${ renderedAttrs }>'`,
@@ -224,8 +230,8 @@ export default class Template {
 							innerSource: []
 						};
 
-						nodes.push((this._currentNode = currentNode));
-						this._nodeMap[elName] = currentNode;
+						els.push((this._currentElement = currentEl));
+						this._elementMap[elName] = currentEl;
 					} else if (elAttrs && elAttrs.list.length) {
 						let renderedClasses;
 						let attrs = '';
@@ -241,7 +247,7 @@ export default class Template {
 							}
 						}
 
-						this._currentNode.innerSource.push(
+						this._currentElement.innerSource.push(
 							`'<${ tagName || 'div' }${
 								renderedClasses ?
 									attrs :
@@ -249,12 +255,12 @@ export default class Template {
 							}>'`
 						);
 					} else {
-						this._currentNode.innerSource.push(
+						this._currentElement.innerSource.push(
 							`'<${ tagName || 'div' } class="${ this._renderElementClasses(elNames).slice(0, -1) }">'`
 						);
 					}
 				} else {
-					this._currentNode.innerSource.push(`'<${ tagName || 'div' }${
+					this._currentElement.innerSource.push(`'<${ tagName || 'div' }${
 						elAttrs ? elAttrs.list.map(
 							attr => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
 						).join('') : ''
@@ -268,24 +274,24 @@ export default class Template {
 				}
 
 				if (elName) {
-					nodes.pop();
-					this._currentNode = nodes[nodes.length - 1];
-					this._currentNode.innerSource.push(`this['${ elName }']()`);
+					els.pop();
+					this._currentElement = els[els.length - 1];
+					this._currentElement.innerSource.push(`this['${ elName }']()`);
 				} else if (content || !tagName || !(tagName in selfClosingTags)) {
-					this._currentNode.innerSource.push(`'</${ tagName || 'div' }>'`);
+					this._currentElement.innerSource.push(`'</${ tagName || 'div' }>'`);
 				}
 
 				break;
 			}
 			case NodeType.TEXT: {
-				this._currentNode.innerSource.push(`'${ escapeString((node as ITextNode).value) }'`);
+				this._currentElement.innerSource.push(`'${ escapeString((node as ITextNode).value) }'`);
 				break;
 			}
 			case NodeType.SUPER_CALL: {
-				this._currentNode.innerSource.push(
+				this._currentElement.innerSource.push(
 					`$super['${ (node as ISuperCall).elementName || parentElementName }@content'].call(this)`
 				);
-				this._currentNode.superCall = true;
+				this._currentElement.superCall = true;
 				break;
 			}
 		}

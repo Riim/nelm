@@ -155,7 +155,7 @@ test('comment in attributes', () => {
 });
 
 test('helper 1', () => {
-	Template.helpers.test = (el) => {
+	Template.helpers.test = el => {
 		return [
 			{ nodeType: NodeType.TEXT, value: '1' },
 			{ nodeType: NodeType.TEXT, value: '2' },
@@ -170,7 +170,7 @@ test('helper 1', () => {
 });
 
 test('helper 2', () => {
-	Template.helpers.test = (el) => {
+	Template.helpers.test = el => {
 		return [
 			{ nodeType: NodeType.TEXT, value: '[' },
 			...el.content,
