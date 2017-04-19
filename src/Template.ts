@@ -103,41 +103,10 @@ export default class Template {
 				let parent = this.parent;
 				let els = this._elements;
 				let el = node as IElement;
+				let isHelper = el.isHelper;
 				let tagName = el.tagName;
 				let elNames = el.names;
 				let elName = elNames && elNames[0];
-
-				if (el.isHelper) {
-					if (!tagName) {
-						throw new TypeError('tagName is required');
-					}
-
-					let helper = Template.helpers[tagName];
-
-					if (!helper) {
-						throw new TypeError(`Helper "${ tagName }" is not defined`);
-					}
-
-					let content = helper(el);
-
-					if (!content) {
-						return;
-					}
-
-					if (content.length == 1 && content[0].nodeType == NodeType.ELEMENT) {
-						el = content[0] as IElement;
-						tagName = el.tagName;
-						elNames = el.names;
-						elName = elNames && elNames[0];
-					} else {
-						for (let contentNode of content) {
-							this._handleNode(contentNode, elName || parentElementName);
-						}
-
-						return;
-					}
-				}
-
 				let elAttrs = el.attributes;
 				let content = el.content;
 
@@ -148,7 +117,8 @@ export default class Template {
 								this._tagNameMap = { __proto__: parent && parent._tagNameMap || null } as any
 							))[elName] = tagName;
 						} else {
-							tagName = parent && parent._tagNameMap && parent._tagNameMap[elName] || 'div';
+							// Не надо добавлять в конец ` || 'div'`, тк. ниже tagName используется как имя хелпера.
+							tagName = parent && parent._tagNameMap && parent._tagNameMap[elName];
 						}
 
 						let renderedAttrs: string;
@@ -214,52 +184,64 @@ export default class Template {
 							}
 
 							renderedAttrs = join.call(attrList, '');
-						} else {
+						} else if (!isHelper) {
 							renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
+						} else {
+							renderedAttrs = '';
 						}
 
 						let currentEl = {
 							name: elName,
 							superCall: false,
-							source: [
-								`'<${ tagName }${ renderedAttrs }>'`,
+							source: isHelper ? [`this['${ elName }@content']()`] : [
+								`'<${ tagName || 'div' }${ renderedAttrs }>'`,
 								content && content.length ?
-									`this['${ elName }@content']() + '</${ tagName }>'` :
-									(!content && tagName in selfClosingTags ? "''" : `'</${ tagName }>'`)
+									`this['${ elName }@content']() + '</${ tagName || 'div' }>'` :
+									(
+										!content && tagName && tagName in selfClosingTags ?
+											"''" :
+											`'</${ tagName || 'div' }>'`
+									)
 							],
 							innerSource: []
 						};
 
 						els.push((this._currentElement = currentEl));
 						this._elementMap[elName] = currentEl;
-					} else if (elAttrs && elAttrs.list.length) {
-						let renderedClasses;
-						let attrs = '';
+					} else if (!isHelper) {
+						if (elAttrs && elAttrs.list.length) {
+							let renderedClasses;
+							let attrs = '';
 
-						for (let attr of elAttrs.list) {
-							let value = attr.value;
+							for (let attr of elAttrs.list) {
+								let value = attr.value;
 
-							if (attr.name == 'class') {
-								renderedClasses = this._renderElementClasses(elNames);
-								attrs += ` class="${ value ? renderedClasses + value : renderedClasses.slice(0, -1) }"`;
-							} else {
-								attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
+								if (attr.name == 'class') {
+									renderedClasses = this._renderElementClasses(elNames);
+									attrs += ` class="${
+										value ? renderedClasses + value : renderedClasses.slice(0, -1)
+									}"`;
+								} else {
+									attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
+								}
 							}
-						}
 
-						this._currentElement.innerSource.push(
-							`'<${ tagName || 'div' }${
-								renderedClasses ?
-									attrs :
-									` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
-							}>'`
-						);
-					} else {
-						this._currentElement.innerSource.push(
-							`'<${ tagName || 'div' } class="${ this._renderElementClasses(elNames).slice(0, -1) }">'`
-						);
+							this._currentElement.innerSource.push(
+								`'<${ tagName || 'div' }${
+									renderedClasses ?
+										attrs :
+										` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
+								}>'`
+							);
+						} else {
+							this._currentElement.innerSource.push(
+								`'<${ tagName || 'div' } class="${
+									this._renderElementClasses(elNames).slice(0, -1)
+								}">'`
+							);
+						}
 					}
-				} else {
+				} else if (!isHelper) {
 					this._currentElement.innerSource.push(`'<${ tagName || 'div' }${
 						elAttrs ? elAttrs.list.map(
 							attr => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
@@ -267,7 +249,25 @@ export default class Template {
 					}>'`);
 				}
 
-				if (content) {
+				if (isHelper) {
+					if (!tagName) {
+						throw new TypeError('tagName is required');
+					}
+
+					let helper = Template.helpers[tagName];
+
+					if (!helper) {
+						throw new TypeError(`Helper "${ tagName }" is not defined`);
+					}
+
+					let content = helper(el);
+
+					if (content) {
+						for (let contentNode of content) {
+							this._handleNode(contentNode, elName || parentElementName);
+						}
+					}
+				} else if (content) {
 					for (let contentNode of content) {
 						this._handleNode(contentNode, elName || parentElementName);
 					}
@@ -277,7 +277,7 @@ export default class Template {
 					els.pop();
 					this._currentElement = els[els.length - 1];
 					this._currentElement.innerSource.push(`this['${ elName }']()`);
-				} else if (content || !tagName || !(tagName in selfClosingTags)) {
+				} else if (!isHelper && (content || !tagName || !(tagName in selfClosingTags))) {
 					this._currentElement.innerSource.push(`'</${ tagName || 'div' }>'`);
 				}
 
@@ -288,9 +288,8 @@ export default class Template {
 				break;
 			}
 			case NodeType.SUPER_CALL: {
-				this._currentElement.innerSource.push(
-					`$super['${ (node as ISuperCall).elementName || parentElementName }@content'].call(this)`
-				);
+				this._currentElement.innerSource
+					.push(`$super['${ (node as ISuperCall).elementName || parentElementName }@content'].call(this)`);
 				this._currentElement.superCall = true;
 				break;
 			}

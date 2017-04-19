@@ -50,7 +50,9 @@ test('content super', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		div/el1 { span { super! } }
+		div/el1 {
+			span { super! }
+		}
 	`).render()).toBe('<div class="block1-x__el1 block1__el1"><span>text</span></div>');
 });
 
@@ -74,7 +76,9 @@ test('content super.el-name', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		div/el1 { span/el2 { super.el1! } }
+		div/el1 {
+			span/el2 { super.el1! }
+		}
 	`).render()).toBe(
 		'<div class="block1-x__el1 block1__el1"><span class="block1-x__el2 block1__el2">text</span></div>'
 	);
@@ -154,7 +158,7 @@ test('comment in attributes', () => {
 	);
 });
 
-test('helper 1', () => {
+test('helper', () => {
 	Template.helpers.test = el => {
 		return [
 			{ nodeType: NodeType.TEXT, value: '1' },
@@ -169,7 +173,7 @@ test('helper 1', () => {
 	`).render()).toBe('<span>123</span>');
 });
 
-test('helper 2', () => {
+test('overriding helper', () => {
 	Template.helpers.test = el => {
 		return [
 			{ nodeType: NodeType.TEXT, value: '[' },
@@ -180,6 +184,47 @@ test('helper 2', () => {
 
 	expect(new Template(`
 		#block1
-		span { @test { div } }
+		span {
+			@test { div }
+		}
 	`).render()).toBe('<span>[<div></div>]</span>');
+});
+
+test('helper content super', () => {
+	let t1 = new Template(`
+		#block1
+		@section/inner {
+			span
+		}
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		@/inner {
+			div { super! }
+		}
+	`).render()).toBe('<div><span></span></div>');
+});
+
+test('helper attributes super', () => {
+	Template.helpers.test = el => {
+		return [{
+			nodeType: NodeType.ELEMENT,
+			isHelper: false,
+			tagName: 'span',
+			names: ['span'],
+			attributes: el.attributes,
+			content: null
+		}];
+	};
+
+	let t1 = new Template(`
+		#block1
+		@test/test (attr1=value1)
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		@/test (super!, attr2=value2)
+	`).render()).toBe('<span attr1="value1" attr2="value2" class="block1-x__span block1__span"></span>');
 });
