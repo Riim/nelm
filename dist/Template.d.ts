@@ -1,4 +1,4 @@
-import { INode, TContent, IElement } from './Parser';
+import { INode, TContent, IBlock, IElement } from './Parser';
 export interface ITemplateElement {
     name: string | null;
     superCall: boolean;
@@ -36,7 +36,7 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
-    constructor(beml: string, opts?: {
+    constructor(beml: IBlock | string, opts?: {
         parent?: Template;
         blockName?: string;
     });

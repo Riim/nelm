@@ -9,7 +9,7 @@ var elDelimiter = '__';
 var Template = (function () {
     function Template(beml, opts) {
         var parent = this.parent = opts && opts.parent || null;
-        var block = new Parser_1.default(beml).parse();
+        var block = typeof beml == 'string' ? new Parser_1.default(beml).parse() : beml;
         var blockName = opts && opts.blockName || block.name;
         this._elementClassesTemplate = parent ?
             (blockName ?

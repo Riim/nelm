@@ -4,6 +4,7 @@ import {
 	NodeType,
 	INode,
 	TContent,
+	IBlock,
 	IElement,
 	ITextNode,
 	ISuperCall,
@@ -55,9 +56,9 @@ export default class Template {
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
 
-	constructor(beml: string, opts?: { parent?: Template, blockName?: string }) {
+	constructor(beml: IBlock | string, opts?: { parent?: Template, blockName?: string }) {
 		let parent = this.parent = opts && opts.parent || null;
-		let block = new Parser(beml).parse();
+		let block = typeof beml == 'string' ? new Parser(beml).parse() : beml;
 		let blockName = opts && opts.blockName || block.name;
 
 		this._elementClassesTemplate = parent ?
