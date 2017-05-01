@@ -1,7 +1,6 @@
 import {
 	NodeType,
 	INode,
-	IBlockDeclaration,
 	TContent,
 	IBlock,
 	ISuperCall,
@@ -18,7 +17,6 @@ import Template from './Template';
 export {
 	NodeType,
 	INode,
-	IBlockDeclaration,
 	TContent,
 	IBlock,
 	ISuperCall,

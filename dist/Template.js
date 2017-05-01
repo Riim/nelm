@@ -45,8 +45,8 @@ var Template = (function () {
                 var parent_1 = this.parent;
                 var els = this._elements;
                 var el = node;
-                var isHelper = el.isHelper;
                 var tagName = el.tagName;
+                var isHelper = el.isHelper;
                 var elNames = el.names;
                 var elName = elNames && elNames[0];
                 var elAttrs = el.attributes;
@@ -73,7 +73,7 @@ var Template = (function () {
                             var attrCount = void 0;
                             if (elAttrsSuperCall) {
                                 if (!parent_1) {
-                                    throw new TypeError('Parent template required');
+                                    throw new TypeError('Parent template is required when using super');
                                 }
                                 attrList = attrListMap[elName] = Object.create(parent_1._attributeListMap[elAttrsSuperCall.elementName || elName] || null);
                                 attrCount = attrCountMap[elName] =

@@ -10,15 +10,10 @@ export interface INode {
 	nodeType: NodeType;
 }
 
-export interface IBlockDeclaration {
-	blockName: string;
-}
-
 export type TContent = Array<INode>;
 
 export interface IBlock extends INode {
 	nodeType: NodeType.BLOCK;
-	declaration: IBlockDeclaration | null;
 	name: string | null;
 	content: TContent;
 }
@@ -42,8 +37,8 @@ export interface IElementAttributes {
 
 export interface IElement extends INode {
 	nodeType: NodeType.ELEMENT;
-	isHelper: boolean;
 	tagName: string | null;
+	isHelper: boolean;
 	names: Array<string | null> | null;
 	attributes: IElementAttributes | null;
 	content: TContent | null;
@@ -89,19 +84,16 @@ export default class Parser {
 			(content || (content = [])).push(this._readComment());
 		}
 
-		let decl = this.chr == '#' ? this._readBlockDeclaration() : null;
+		let blockName = this.chr == '#' ? this._readBlockName() : null;
 
 		return {
 			nodeType: NodeType.BLOCK,
-			declaration: decl,
-			name: decl && decl.blockName,
+			name: blockName,
 			content: content ? content.concat(this._readContent(false)) : this._readContent(false)
 		};
 	}
 
-	_readBlockDeclaration(): IBlockDeclaration {
-		let at = this.at;
-
+	_readBlockName(): string {
 		this._next('#');
 
 		let blockName = this._readName(reBlockNameOrNothing);
@@ -110,14 +102,12 @@ export default class Parser {
 			throw {
 				name: 'SyntaxError',
 				message: 'Invalid block declaration',
-				at,
+				at: this.at,
 				beml: this.beml
 			};
 		}
 
-		return {
-			blockName
-		};
+		return blockName;
 	}
 
 	_readContent(brackets: boolean): TContent {
@@ -203,7 +193,7 @@ export default class Parser {
 		if (!tagName && !elNames) {
 			throw {
 				name: 'SyntaxError',
-				message: 'Expected tag name',
+				message: 'Expected element',
 				at,
 				beml: this.beml
 			};
@@ -219,8 +209,8 @@ export default class Parser {
 
 		return {
 			nodeType: NodeType.ELEMENT,
-			isHelper,
 			tagName,
+			isHelper,
 			names: elNames,
 			attributes: attrs,
 			content
@@ -492,7 +482,7 @@ export default class Parser {
 		let name = (reNameOrNothing.exec(this.beml) as RegExpExecArray)[0];
 
 		if (name) {
-			this.chr = this.beml.charAt((this.at += name.length));
+			this.chr = this.beml.charAt((this.at = reNameOrNothing.lastIndex));
 			return name;
 		}
 

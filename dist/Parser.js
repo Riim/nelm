@@ -27,29 +27,25 @@ var Parser = (function () {
         while (this._skipWhitespaces() == '/') {
             (content || (content = [])).push(this._readComment());
         }
-        var decl = this.chr == '#' ? this._readBlockDeclaration() : null;
+        var blockName = this.chr == '#' ? this._readBlockName() : null;
         return {
             nodeType: NodeType.BLOCK,
-            declaration: decl,
-            name: decl && decl.blockName,
+            name: blockName,
             content: content ? content.concat(this._readContent(false)) : this._readContent(false)
         };
     };
-    Parser.prototype._readBlockDeclaration = function () {
-        var at = this.at;
+    Parser.prototype._readBlockName = function () {
         this._next('#');
         var blockName = this._readName(reBlockNameOrNothing);
         if (!blockName) {
             throw {
                 name: 'SyntaxError',
                 message: 'Invalid block declaration',
-                at: at,
+                at: this.at,
                 beml: this.beml
             };
         }
-        return {
-            blockName: blockName
-        };
+        return blockName;
     };
     Parser.prototype._readContent = function (brackets) {
         if (brackets) {
@@ -118,7 +114,7 @@ var Parser = (function () {
         if (!tagName && !elNames) {
             throw {
                 name: 'SyntaxError',
-                message: 'Expected tag name',
+                message: 'Expected element',
                 at: at,
                 beml: this.beml
             };
@@ -130,8 +126,8 @@ var Parser = (function () {
         var content = this.chr == '{' ? this._readContent(true) : null;
         return {
             nodeType: NodeType.ELEMENT,
-            isHelper: isHelper,
             tagName: tagName,
+            isHelper: isHelper,
             names: elNames,
             attributes: attrs,
             content: content
@@ -362,7 +358,7 @@ var Parser = (function () {
         reNameOrNothing.lastIndex = this.at;
         var name = reNameOrNothing.exec(this.beml)[0];
         if (name) {
-            this.chr = this.beml.charAt((this.at += name.length));
+            this.chr = this.beml.charAt((this.at = reNameOrNothing.lastIndex));
             return name;
         }
         return null;

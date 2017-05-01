@@ -103,8 +103,8 @@ export default class Template {
 				let parent = this.parent;
 				let els = this._elements;
 				let el = node as IElement;
-				let isHelper = el.isHelper;
 				let tagName = el.tagName;
+				let isHelper = el.isHelper;
 				let elNames = el.names;
 				let elName = elNames && elNames[0];
 				let elAttrs = el.attributes;
@@ -141,7 +141,7 @@ export default class Template {
 
 							if (elAttrsSuperCall) {
 								if (!parent) {
-									throw new TypeError('Parent template required');
+									throw new TypeError('Parent template is required when using super');
 								}
 
 								attrList = attrListMap[elName] = Object.create(

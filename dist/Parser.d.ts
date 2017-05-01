@@ -8,13 +8,9 @@ export declare enum NodeType {
 export interface INode {
     nodeType: NodeType;
 }
-export interface IBlockDeclaration {
-    blockName: string;
-}
 export declare type TContent = Array<INode>;
 export interface IBlock extends INode {
     nodeType: NodeType.BLOCK;
-    declaration: IBlockDeclaration | null;
     name: string | null;
     content: TContent;
 }
@@ -33,8 +29,8 @@ export interface IElementAttributes {
 }
 export interface IElement extends INode {
     nodeType: NodeType.ELEMENT;
-    isHelper: boolean;
     tagName: string | null;
+    isHelper: boolean;
     names: Array<string | null> | null;
     attributes: IElementAttributes | null;
     content: TContent | null;
@@ -54,7 +50,7 @@ export default class Parser {
     chr: string;
     constructor(beml: string);
     parse(): IBlock;
-    _readBlockDeclaration(): IBlockDeclaration;
+    _readBlockName(): string;
     _readContent(brackets: boolean): TContent;
     _readElement(): IElement;
     _readAttributes(): IElementAttributes;
