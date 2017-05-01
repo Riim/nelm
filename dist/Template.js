@@ -73,7 +73,7 @@ var Template = (function () {
                             var attrCount = void 0;
                             if (elAttrsSuperCall) {
                                 if (!parent_1) {
-                                    throw new TypeError("Required parent template for \"" + elAttrsSuperCall.raw + "\"");
+                                    throw new TypeError('Parent template required');
                                 }
                                 attrList = attrListMap[elName] = Object.create(parent_1._attributeListMap[elAttrsSuperCall.elementName || elName] || null);
                                 attrCount = attrCountMap[elName] =

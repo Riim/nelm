@@ -141,7 +141,7 @@ export default class Template {
 
 							if (elAttrsSuperCall) {
 								if (!parent) {
-									throw new TypeError(`Required parent template for "${ elAttrsSuperCall.raw }"`);
+									throw new TypeError('Parent template required');
 								}
 
 								attrList = attrListMap[elName] = Object.create(

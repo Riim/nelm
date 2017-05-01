@@ -32,9 +32,7 @@ var Parser = (function () {
             nodeType: NodeType.BLOCK,
             declaration: decl,
             name: decl && decl.blockName,
-            content: content ? content.concat(this._readContent(false)) : this._readContent(false),
-            at: 0,
-            raw: this.beml,
+            content: content ? content.concat(this._readContent(false)) : this._readContent(false)
         };
     };
     Parser.prototype._readBlockDeclaration = function () {
@@ -50,9 +48,7 @@ var Parser = (function () {
             };
         }
         return {
-            blockName: blockName,
-            at: at,
-            raw: '#' + blockName
+            blockName: blockName
         };
     };
     Parser.prototype._readContent = function (brackets) {
@@ -92,17 +88,13 @@ var Parser = (function () {
                             this._next();
                             return content;
                         }
-                        var at = this.at;
-                        reSuperCallOrNothing.lastIndex = at;
+                        reSuperCallOrNothing.lastIndex = this.at;
                         var superCallMatch = reSuperCallOrNothing.exec(this.beml);
-                        var superCallRaw = superCallMatch[0];
-                        if (superCallRaw) {
-                            this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+                        if (superCallMatch[0]) {
+                            this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
                             content.push({
                                 nodeType: NodeType.SUPER_CALL,
-                                elementName: superCallMatch[1] || null,
-                                at: at,
-                                raw: superCallRaw
+                                elementName: superCallMatch[1] || null
                             });
                             break;
                         }
@@ -142,21 +134,16 @@ var Parser = (function () {
             tagName: tagName,
             names: elNames,
             attributes: attrs,
-            content: content,
-            at: at,
-            raw: this.beml.slice(at, this.at).trim(),
+            content: content
         };
     };
     Parser.prototype._readAttributes = function () {
-        var at = this.at;
         this._next('(');
         if (this._skipWhitespacesAndComments() == ')') {
             this._next();
             return {
                 superCall: null,
-                list: [],
-                at: at,
-                raw: this.beml.slice(at, this.at)
+                list: []
             };
         }
         var superCall;
@@ -229,9 +216,7 @@ var Parser = (function () {
         }
         return {
             superCall: superCall || null,
-            list: list,
-            at: at,
-            raw: this.beml.slice(at, this.at)
+            list: list
         };
     };
     Parser.prototype._skipWhitespacesAndComments = function () {
@@ -251,29 +236,22 @@ var Parser = (function () {
         return chr;
     };
     Parser.prototype._readSuperCall = function () {
-        var at = this.at;
-        reSuperCallOrNothing.lastIndex = at;
+        reSuperCallOrNothing.lastIndex = this.at;
         var superCallMatch = reSuperCallOrNothing.exec(this.beml);
-        var superCallRaw = superCallMatch[0];
-        if (superCallRaw) {
-            this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+        if (superCallMatch[0]) {
+            this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
             return {
                 nodeType: NodeType.SUPER_CALL,
-                elementName: superCallMatch[1] || null,
-                at: at,
-                raw: superCallRaw
+                elementName: superCallMatch[1] || null
             };
         }
         return null;
     };
     Parser.prototype._readTextNode = function () {
-        var at = this.at;
         var str = this._readString();
         return {
             nodeType: NodeType.TEXT,
-            value: str.multiline ? normalizeMultilineText(str.value) : str.value,
-            at: at,
-            raw: this.beml.slice(at, this.at)
+            value: str.multiline ? normalizeMultilineText(str.value) : str.value
         };
     };
     Parser.prototype._readString = function () {
@@ -313,7 +291,6 @@ var Parser = (function () {
         };
     };
     Parser.prototype._readComment = function () {
-        var at = this.at;
         var value = '';
         var multiline;
         switch (this._next('/')) {
@@ -366,9 +343,7 @@ var Parser = (function () {
         return {
             nodeType: NodeType.COMMENT,
             value: value,
-            multiline: multiline,
-            at: at,
-            raw: this.beml.slice(at, this.at)
+            multiline: multiline
         };
     };
     Parser.prototype._readElementNames = function () {

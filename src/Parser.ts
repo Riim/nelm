@@ -8,14 +8,10 @@ export enum NodeType {
 
 export interface INode {
 	nodeType: NodeType;
-	at?: number;
-	raw?: string;
 }
 
 export interface IBlockDeclaration {
 	blockName: string;
-	at?: number;
-	raw?: string;
 }
 
 export type TContent = Array<INode>;
@@ -42,8 +38,6 @@ export type TElementAttributeList = Array<IElementAttribute>;
 export interface IElementAttributes {
 	superCall: ISuperCall | null;
 	list: TElementAttributeList;
-	at?: number;
-	raw?: string;
 }
 
 export interface IElement extends INode {
@@ -101,9 +95,7 @@ export default class Parser {
 			nodeType: NodeType.BLOCK,
 			declaration: decl,
 			name: decl && decl.blockName,
-			content: content ? content.concat(this._readContent(false)) : this._readContent(false),
-			at: 0,
-			raw: this.beml,
+			content: content ? content.concat(this._readContent(false)) : this._readContent(false)
 		};
 	}
 
@@ -124,9 +116,7 @@ export default class Parser {
 		}
 
 		return {
-			blockName,
-			at,
-			raw: '#' + blockName
+			blockName
 		};
 	}
 
@@ -173,20 +163,15 @@ export default class Parser {
 							return content;
 						}
 
-						let at = this.at;
-
-						reSuperCallOrNothing.lastIndex = at;
+						reSuperCallOrNothing.lastIndex = this.at;
 						let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
-						let superCallRaw = superCallMatch[0];
 
-						if (superCallRaw) {
-							this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+						if (superCallMatch[0]) {
+							this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
 
 							content.push({
 								nodeType: NodeType.SUPER_CALL,
-								elementName: superCallMatch[1] || null,
-								at,
-								raw: superCallRaw
+								elementName: superCallMatch[1] || null
 							} as ISuperCall);
 
 							break;
@@ -238,15 +223,11 @@ export default class Parser {
 			tagName,
 			names: elNames,
 			attributes: attrs,
-			content,
-			at,
-			raw: this.beml.slice(at, this.at).trim(),
+			content
 		};
 	}
 
 	_readAttributes(): IElementAttributes {
-		let at = this.at;
-
 		this._next('(');
 
 		if (this._skipWhitespacesAndComments() == ')') {
@@ -254,9 +235,7 @@ export default class Parser {
 
 			return {
 				superCall: null,
-				list: [],
-				at,
-				raw: this.beml.slice(at, this.at)
+				list: []
 			};
 		}
 
@@ -338,9 +317,7 @@ export default class Parser {
 
 		return {
 			superCall: superCall || null,
-			list,
-			at,
-			raw: this.beml.slice(at, this.at)
+			list
 		};
 	}
 
@@ -362,20 +339,15 @@ export default class Parser {
 	}
 
 	_readSuperCall(): ISuperCall | null {
-		let at = this.at;
-
-		reSuperCallOrNothing.lastIndex = at;
+		reSuperCallOrNothing.lastIndex = this.at;
 		let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
-		let superCallRaw = superCallMatch[0];
 
-		if (superCallRaw) {
-			this.chr = this.beml.charAt((this.at = at + superCallRaw.length));
+		if (superCallMatch[0]) {
+			this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
 
 			return {
 				nodeType: NodeType.SUPER_CALL,
-				elementName: superCallMatch[1] || null,
-				at,
-				raw: superCallRaw
+				elementName: superCallMatch[1] || null
 			};
 		}
 
@@ -383,14 +355,11 @@ export default class Parser {
 	}
 
 	_readTextNode(): ITextNode {
-		let at = this.at;
 		let str = this._readString();
 
 		return {
 			nodeType: NodeType.TEXT,
-			value: str.multiline ? normalizeMultilineText(str.value) : str.value,
-			at,
-			raw: this.beml.slice(at, this.at)
+			value: str.multiline ? normalizeMultilineText(str.value) : str.value
 		};
 	}
 
@@ -438,7 +407,6 @@ export default class Parser {
 	}
 
 	_readComment(): IComment {
-		let at = this.at;
 		let value = '';
 		let multiline: boolean;
 
@@ -498,9 +466,7 @@ export default class Parser {
 		return {
 			nodeType: NodeType.COMMENT,
 			value,
-			multiline,
-			at,
-			raw: this.beml.slice(at, this.at)
+			multiline
 		};
 	}
 
