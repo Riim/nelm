@@ -56,18 +56,17 @@ export default class Template {
 	_elementRendererMap: IElementRendererMap;
 
 	constructor(beml: string, opts?: { parent?: Template, blockName?: string }) {
+		let parent = this.parent = opts && opts.parent || null;
 		let block = new Parser(beml).parse();
 		let blockName = opts && opts.blockName || block.name;
 
-		if (!blockName) {
-			throw new TypeError('blockName is required');
-		}
-
-		let parent = this.parent = opts && opts.parent || null;
-
 		this._elementClassesTemplate = parent ?
-			[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
-			[blockName + elDelimiter, ''];
+			(
+				blockName ?
+					[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
+					parent._elementClassesTemplate
+			) :
+			[blockName ? blockName + elDelimiter : '', ''];
 
 		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
 		let elMap = this._elementMap = {} as { [elName: string]: ITemplateElement };

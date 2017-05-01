@@ -8,15 +8,14 @@ var join = Array.prototype.join;
 var elDelimiter = '__';
 var Template = (function () {
     function Template(beml, opts) {
+        var parent = this.parent = opts && opts.parent || null;
         var block = new Parser_1.default(beml).parse();
         var blockName = opts && opts.blockName || block.name;
-        if (!blockName) {
-            throw new TypeError('blockName is required');
-        }
-        var parent = this.parent = opts && opts.parent || null;
         this._elementClassesTemplate = parent ?
-            [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
-            [blockName + elDelimiter, ''];
+            (blockName ?
+                [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
+                parent._elementClassesTemplate) :
+            [blockName ? blockName + elDelimiter : '', ''];
         this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
         var elMap = this._elementMap = {};
         for (var _i = 0, _a = block.content; _i < _a.length; _i++) {
