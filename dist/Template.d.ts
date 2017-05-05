@@ -42,7 +42,7 @@ export default class Template {
     });
     _handleNode(node: INode, parentElementName?: string): void;
     _renderElementClasses(elNames: Array<string | null>): string;
-    extend(beml: string, opts?: {
+    extend(beml: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
     render(): any;

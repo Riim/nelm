@@ -309,7 +309,7 @@ export default class Template {
 		return elClasses;
 	}
 
-	extend(beml: string, opts?: { blockName?: string }): Template {
+	extend(beml: string | IBlock, opts?: { blockName?: string }): Template {
 		return new Template(beml, { __proto__: opts || null, parent: this } as any);
 	}
 
