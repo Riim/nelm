@@ -36,7 +36,7 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
-    constructor(beml: IBlock | string, opts?: {
+    constructor(beml: string | IBlock, opts?: {
         parent?: Template;
         blockName?: string;
     });

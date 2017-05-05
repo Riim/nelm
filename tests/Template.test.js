@@ -228,3 +228,9 @@ test('helper attributes super', () => {
 		@/test (super!, attr2=value2)
 	`).render()).toBe('<span attr1="value1" attr2="value2" class="block1-x__span block1__span"></span>');
 });
+
+test('escape sequences', () => {
+	expect(new Template(`
+		'_\\t_\\x20_\\u0020_'
+	`).render()).toBe('_\t_\x20_\u0020_');
+});

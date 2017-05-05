@@ -8,6 +8,16 @@ var NodeType;
     NodeType[NodeType["COMMENT"] = 4] = "COMMENT";
     NodeType[NodeType["SUPER_CALL"] = 5] = "SUPER_CALL";
 })(NodeType = exports.NodeType || (exports.NodeType = {}));
+var escapee = {
+    __proto__: null,
+    '/': '/',
+    '\\': '\\',
+    b: '\b',
+    f: '\f',
+    n: '\n',
+    r: '\r',
+    t: '\t'
+};
 var reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 var reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[a-zA-Z][\-\w]*)?|/g;
 var reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
@@ -160,8 +170,8 @@ var Parser = (function () {
                 }
                 if (this._skipWhitespacesAndComments() == '=') {
                     this._next();
-                    var next = this._skipWhitespaces();
-                    if (next == "'" || next == '"' || next == '`') {
+                    var chr = this._skipWhitespaces();
+                    if (chr == "'" || chr == '"' || chr == '`') {
                         var str = this._readString();
                         list.push({
                             name: name_1,
@@ -171,7 +181,7 @@ var Parser = (function () {
                     else {
                         var value = '';
                         for (;;) {
-                            if (!next) {
+                            if (!chr) {
                                 throw {
                                     name: 'SyntaxError',
                                     message: 'Invalid attribute',
@@ -179,12 +189,12 @@ var Parser = (function () {
                                     beml: this.beml
                                 };
                             }
-                            if (next == '\r' || next == '\n' || next == ',' || next == ')') {
+                            if (chr == '\r' || chr == '\n' || chr == ',' || chr == ')') {
                                 list.push({ name: name_1, value: value.trim() });
                                 break;
                             }
-                            value += next;
-                            next = this._next();
+                            value += chr;
+                            chr = this._next();
                         }
                     }
                     this._skipWhitespacesAndComments();
@@ -261,22 +271,45 @@ var Parser = (function () {
             };
         }
         var str = '';
-        for (var next = void 0; (next = this._next());) {
-            if (next == quoteChar) {
+        for (var chr = this._next(); chr;) {
+            if (chr == quoteChar) {
                 this._next();
                 return {
                     value: str,
                     multiline: quoteChar == '`'
                 };
             }
-            if (next == '\\') {
-                str += next + this._next();
-            }
-            else {
-                if (quoteChar != '`' && (next == '\r' || next == '\n')) {
+            if (chr == '\\') {
+                chr = this._next();
+                if (chr == 'x' || chr == 'u') {
+                    var at = this.at;
+                    var hexadecimal = chr == 'x';
+                    var code = parseInt(this.beml.slice(at + 1, at + (hexadecimal ? 3 : 5)), 16);
+                    if (!isFinite(code)) {
+                        throw {
+                            name: 'SyntaxError',
+                            message: "Malformed " + (hexadecimal ? 'hexadecimal' : 'unicode') + " escape sequence",
+                            at: at - 1,
+                            beml: this.beml
+                        };
+                    }
+                    str += String.fromCharCode(code);
+                    chr = this.chr = this.beml.charAt((this.at = at + (hexadecimal ? 3 : 5)));
+                }
+                else if (chr in escapee) {
+                    str += escapee[chr];
+                    chr = this._next();
+                }
+                else {
                     break;
                 }
-                str += next;
+            }
+            else {
+                if (quoteChar != '`' && (chr == '\r' || chr == '\n')) {
+                    break;
+                }
+                str += chr;
+                chr = this._next();
             }
         }
         throw {
@@ -291,8 +324,8 @@ var Parser = (function () {
         var multiline;
         switch (this._next('/')) {
             case '/': {
-                for (var next = void 0; (next = this._next()) && next != '\r' && next != '\n';) {
-                    value += next;
+                for (var chr = void 0; (chr = this._next()) && chr != '\r' && chr != '\n';) {
+                    value += chr;
                 }
                 multiline = false;
                 break;

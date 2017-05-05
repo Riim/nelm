@@ -55,6 +55,18 @@ export interface IComment extends INode {
 	multiline: boolean;
 }
 
+let escapee = {
+	__proto__: null,
+
+	'/': '/',
+	'\\': '\\',
+	b: '\b',
+	f: '\f',
+	n: '\n',
+	r: '\r',
+	t: '\t'
+};
+
 let reBlockNameOrNothing = /[a-zA-Z][\-\w]*|/g;
 let reTagNameOrNothing = /[a-zA-Z][\-\w]*(?::[a-zA-Z][\-\w]*)?|/g;
 let reElementNameOrNothing = /[a-zA-Z][\-\w]*|/g;
@@ -250,9 +262,9 @@ export default class Parser {
 				if (this._skipWhitespacesAndComments() == '=') {
 					this._next();
 
-					let next = this._skipWhitespaces();
+					let chr = this._skipWhitespaces();
 
-					if (next == "'" || next == '"' || next == '`') {
+					if (chr == "'" || chr == '"' || chr == '`') {
 						let str = this._readString();
 
 						list.push({
@@ -263,7 +275,7 @@ export default class Parser {
 						let value = '';
 
 						for (;;) {
-							if (!next) {
+							if (!chr) {
 								throw {
 									name: 'SyntaxError',
 									message: 'Invalid attribute',
@@ -272,14 +284,14 @@ export default class Parser {
 								};
 							}
 
-							if (next == '\r' || next == '\n' || next == ',' || next == ')') {
+							if (chr == '\r' || chr == '\n' || chr == ',' || chr == ')') {
 								list.push({ name, value: value.trim() });
 								break;
 							}
 
-							value += next;
+							value += chr;
 
-							next = this._next();
+							chr = this._next();
 						}
 					}
 
@@ -367,8 +379,8 @@ export default class Parser {
 
 		let str = '';
 
-		for (let next; (next = this._next());) {
-			if (next == quoteChar) {
+		for (let chr = this._next(); chr;) {
+			if (chr == quoteChar) {
 				this._next();
 
 				return {
@@ -377,14 +389,39 @@ export default class Parser {
 				};
 			}
 
-			if (next == '\\') {
-				str += next + this._next();
+			if (chr == '\\') {
+				chr = this._next();
+
+				if (chr == 'x' || chr == 'u') {
+					let at = this.at;
+
+					let hexadecimal = chr == 'x';
+					let code = parseInt(this.beml.slice(at + 1, at + (hexadecimal ? 3 : 5)), 16);
+
+					if (!isFinite(code)) {
+						throw {
+							name: 'SyntaxError',
+							message: `Malformed ${ hexadecimal ? 'hexadecimal' : 'unicode' } escape sequence`,
+							at: at - 1,
+							beml: this.beml
+						}
+					}
+
+					str += String.fromCharCode(code);
+					chr = this.chr = this.beml.charAt((this.at = at + (hexadecimal ? 3 : 5)));
+				} else if (chr in escapee) {
+					str += escapee[chr];
+					chr = this._next();
+				} else {
+					break;
+				}
 			} else {
-				if (quoteChar != '`' && (next == '\r' || next == '\n')) {
+				if (quoteChar != '`' && (chr == '\r' || chr == '\n')) {
 					break;
 				}
 
-				str += next;
+				str += chr;
+				chr = this._next();
 			}
 		}
 
@@ -402,8 +439,8 @@ export default class Parser {
 
 		switch (this._next('/')) {
 			case '/': {
-				for (let next; (next = this._next()) && next != '\r' && next != '\n';) {
-					value += next;
+				for (let chr; (chr = this._next()) && chr != '\r' && chr != '\n';) {
+					value += chr;
 				}
 
 				multiline = false;
