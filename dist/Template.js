@@ -103,16 +103,16 @@ var Template = (function () {
                                 length: attrCount + !hasAttrClass
                             };
                             if (hasAttrClass) {
-                                attrList[attrList['class']] = ' class="' + this._renderElementClasses(elNames) +
+                                attrList[attrList['class']] = " class=\"<<" + elNames.join(',') + ">> " +
                                     attrList[attrList['class']].slice(' class="'.length);
                             }
                             else {
-                                attrList[attrCount] = " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"";
+                                attrList[attrCount] = " class=\"<<" + elNames.join(',') + ">>\"";
                             }
                             renderedAttrs = join.call(attrList, '');
                         }
                         else if (!isHelper) {
-                            renderedAttrs = " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"";
+                            renderedAttrs = " class=\"<<" + elNames.join(',') + ">>\"";
                         }
                         else {
                             renderedAttrs = '';
@@ -135,25 +135,23 @@ var Template = (function () {
                     }
                     else if (!isHelper) {
                         if (elAttrs && elAttrs.list.length) {
-                            var renderedClasses = void 0;
+                            var elNamesInsert = void 0;
                             var attrs = '';
                             for (var _b = 0, _c = elAttrs.list; _b < _c.length; _b++) {
                                 var attr = _c[_b];
                                 var value = attr.value;
                                 if (attr.name == 'class') {
-                                    renderedClasses = this._renderElementClasses(elNames);
-                                    attrs += " class=\"" + (value ? renderedClasses + value : renderedClasses.slice(0, -1)) + "\"";
+                                    elNamesInsert = "<<" + elNames.slice(1).join(',') + ">>";
+                                    attrs += " class=\"" + (value ? elNamesInsert + ' ' + value : elNamesInsert) + "\"";
                                 }
                                 else {
                                     attrs += " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
                                 }
                             }
-                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (renderedClasses ?
-                                attrs :
-                                " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"" + attrs) + ">'");
+                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (elNamesInsert ? attrs : " class=\"<<" + elNames.slice(1).join(',') + ">>\"" + attrs) + ">'");
                         }
                         else {
-                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
+                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"<<" + elNames.slice(1).join(',') + ">>\">'");
                         }
                     }
                 }
@@ -204,21 +202,19 @@ var Template = (function () {
             }
         }
     };
-    Template.prototype._renderElementClasses = function (elNames) {
-        var elClasses = elNames[0] ? this._elementClassesTemplate.join(elNames[0] + ' ') : '';
-        var elNameCount = elNames.length;
-        if (elNameCount > 1) {
-            for (var i = 1; i < elNameCount; i++) {
-                elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
-            }
-        }
-        return elClasses;
-    };
     Template.prototype.extend = function (beml, opts) {
         return new Template(beml, { __proto__: opts || null, parent: this });
     };
     Template.prototype.render = function () {
-        return this._renderer.call(this._elementRendererMap);
+        var _this = this;
+        return this._renderer.call(this._elementRendererMap).replace(/<<([^>]+)>>/g, function (match, names) { return _this._renderElementClasses(names.split(',')); });
+    };
+    Template.prototype._renderElementClasses = function (elNames) {
+        var elClasses = '';
+        for (var i = 0, l = elNames.length; i < l; i++) {
+            elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+        }
+        return elClasses.slice(0, -1);
     };
     return Template;
 }());

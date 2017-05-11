@@ -41,9 +41,9 @@ export default class Template {
         blockName?: string;
     });
     _handleNode(node: INode, parentElementName?: string): void;
-    _renderElementClasses(elNames: Array<string | null>): string;
     extend(beml: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
     render(): any;
+    _renderElementClasses(elNames: Array<string | null>): string;
 }

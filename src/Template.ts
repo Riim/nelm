@@ -90,9 +90,8 @@ export default class Template {
 				let parentElementRendererMap = parent && parent._elementRendererMap;
 				this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
 			} else {
-				this[name + '@content'] = Function(
-					`return ${ el.innerSource.join(' + ') || "''" };`
-				) as IElementRenderer;
+				this[name + '@content'] = Function(`return ${ el.innerSource.join(' + ') || "''" };`) as
+					IElementRenderer;
 			}
 		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
 	}
@@ -177,15 +176,15 @@ export default class Template {
 							};
 
 							if (hasAttrClass) {
-								attrList[attrList['class']] = ' class="' + this._renderElementClasses(elNames) +
+								attrList[attrList['class']] = ` class="<<${ elNames.join(',') }>> ` +
 									attrList[attrList['class']].slice(' class="'.length);
 							} else {
-								attrList[attrCount] = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
+								attrList[attrCount] = ` class="<<${ elNames.join(',') }>>"`;
 							}
 
 							renderedAttrs = join.call(attrList, '');
 						} else if (!isHelper) {
-							renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
+							renderedAttrs = ` class="<<${ elNames.join(',') }>>"`;
 						} else {
 							renderedAttrs = '';
 						}
@@ -210,17 +209,15 @@ export default class Template {
 						this._elementMap[elName] = currentEl;
 					} else if (!isHelper) {
 						if (elAttrs && elAttrs.list.length) {
-							let renderedClasses;
+							let elNamesInsert;
 							let attrs = '';
 
 							for (let attr of elAttrs.list) {
 								let value = attr.value;
 
 								if (attr.name == 'class') {
-									renderedClasses = this._renderElementClasses(elNames);
-									attrs += ` class="${
-										value ? renderedClasses + value : renderedClasses.slice(0, -1)
-									}"`;
+									elNamesInsert = `<<${ elNames.slice(1).join(',') }>>`;
+									attrs += ` class="${ value ? elNamesInsert + ' ' + value : elNamesInsert }"`;
 								} else {
 									attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
 								}
@@ -228,16 +225,12 @@ export default class Template {
 
 							this._currentElement.innerSource.push(
 								`'<${ tagName || 'div' }${
-									renderedClasses ?
-										attrs :
-										` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
+									elNamesInsert ? attrs : ` class="<<${ elNames.slice(1).join(',') }>>"` + attrs
 								}>'`
 							);
 						} else {
 							this._currentElement.innerSource.push(
-								`'<${ tagName || 'div' } class="${
-									this._renderElementClasses(elNames).slice(0, -1)
-								}">'`
+								`'<${ tagName || 'div' } class="<<${ elNames.slice(1).join(',') }>>">'`
 							);
 						}
 					}
@@ -296,24 +289,24 @@ export default class Template {
 		}
 	}
 
-	_renderElementClasses(elNames: Array<string | null>): string {
-		let elClasses = elNames[0] ? this._elementClassesTemplate.join(elNames[0] + ' ') : '';
-		let elNameCount = elNames.length;
-
-		if (elNameCount > 1) {
-			for (let i = 1; i < elNameCount; i++) {
-				elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
-			}
-		}
-
-		return elClasses;
-	}
-
 	extend(beml: string | IBlock, opts?: { blockName?: string }): Template {
 		return new Template(beml, { __proto__: opts || null, parent: this } as any);
 	}
 
 	render() {
-		return this._renderer.call(this._elementRendererMap);
+		return this._renderer.call(this._elementRendererMap).replace(
+			/<<([^>]+)>>/g,
+			(match: RegExpMatchArray, names: string): string => this._renderElementClasses(names.split(','))
+		);
+	}
+
+	_renderElementClasses(elNames: Array<string | null>): string {
+		let elClasses = '';
+
+		for (let i = 0, l = elNames.length; i < l; i++) {
+			elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+		}
+
+		return elClasses.slice(0, -1);
 	}
 }
