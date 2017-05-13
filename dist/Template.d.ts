@@ -44,6 +44,7 @@ export default class Template {
     extend(beml: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
+    setBlockName(blockName: string | null): Template;
     render(): any;
     _renderElementClasses(elNames: Array<string | null>): string;
 }

@@ -12,9 +12,7 @@ var Template = (function () {
         var block = typeof beml == 'string' ? new Parser_1.default(beml).parse() : beml;
         var blockName = opts && opts.blockName || block.name;
         this._elementClassesTemplate = parent ?
-            (blockName ?
-                [blockName + elDelimiter].concat(parent._elementClassesTemplate) :
-                parent._elementClassesTemplate) :
+            [blockName ? blockName + elDelimiter : ''].concat(parent._elementClassesTemplate) :
             [blockName ? blockName + elDelimiter : '', ''];
         this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
         var elMap = this._elementMap = {};
@@ -204,6 +202,10 @@ var Template = (function () {
     };
     Template.prototype.extend = function (beml, opts) {
         return new Template(beml, { __proto__: opts || null, parent: this });
+    };
+    Template.prototype.setBlockName = function (blockName) {
+        this._elementClassesTemplate[0] = blockName ? blockName + elDelimiter : '';
+        return this;
     };
     Template.prototype.render = function () {
         var _this = this;

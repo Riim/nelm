@@ -62,11 +62,7 @@ export default class Template {
 		let blockName = opts && opts.blockName || block.name;
 
 		this._elementClassesTemplate = parent ?
-			(
-				blockName ?
-					[blockName + elDelimiter].concat(parent._elementClassesTemplate) :
-					parent._elementClassesTemplate
-			) :
+			[blockName ? blockName + elDelimiter : ''].concat(parent._elementClassesTemplate) :
 			[blockName ? blockName + elDelimiter : '', ''];
 
 		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
@@ -291,6 +287,11 @@ export default class Template {
 
 	extend(beml: string | IBlock, opts?: { blockName?: string }): Template {
 		return new Template(beml, { __proto__: opts || null, parent: this } as any);
+	}
+
+	setBlockName(blockName: string | null): Template {
+		this._elementClassesTemplate[0] = blockName ? blockName + elDelimiter : '';
+		return this;
 	}
 
 	render() {
