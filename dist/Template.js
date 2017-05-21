@@ -7,9 +7,9 @@ var selfClosingTags_1 = require("./selfClosingTags");
 var join = Array.prototype.join;
 var elDelimiter = '__';
 var Template = (function () {
-    function Template(beml, opts) {
+    function Template(nelm, opts) {
         var parent = this.parent = opts && opts.parent || null;
-        var block = typeof beml == 'string' ? new Parser_1.default(beml).parse() : beml;
+        var block = typeof nelm == 'string' ? new Parser_1.default(nelm).parse() : nelm;
         var blockName = opts && opts.blockName || block.name;
         this._elementClassesTemplate = parent ?
             [blockName ? blockName + elDelimiter : ''].concat(parent._elementClassesTemplate) :
@@ -200,8 +200,8 @@ var Template = (function () {
             }
         }
     };
-    Template.prototype.extend = function (beml, opts) {
-        return new Template(beml, { __proto__: opts || null, parent: this });
+    Template.prototype.extend = function (nelm, opts) {
+        return new Template(nelm, { __proto__: opts || null, parent: this });
     };
     Template.prototype.setBlockName = function (blockName) {
         this._elementClassesTemplate[0] = blockName ? blockName + elDelimiter : '';

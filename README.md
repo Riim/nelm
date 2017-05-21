@@ -1,4 +1,4 @@
-# beml
+# nelm
 
 Это новогодний эксперимент, который оказался довольно удачным.  
 Основное назначение -- возможность гибкого переопределения элементов вёрстки. Вот смотри, как переопределяется __логика__: тебе понадобилось что-то добавить к поведению компонента, ты наследуешь от него, находишь какой-то метод и добавляешь к нему что-то ещё:
@@ -38,14 +38,14 @@ myMethod() {
 ```js
 this.$('element-name') // сокращение для this.element.querySelector('.block-name__element-name')
 ```
-Так почему бы автоматически не генерировать переопределяемые блоки по именам элементов? Beml делает именно это:
+Так почему бы автоматически не генерировать переопределяемые блоки по именам элементов? Nelm делает именно это:
 <p>
     <img src="https://3.downloader.disk.yandex.ru/preview/2e72e898571ad9eda618a30a34fe2315296eb17db8bf3f550ac49c8a2e3c4644/inf/ObPNusslySg1DkKXVbAng5E2G6lidPu5J6KLHZoHoEtXFot5RCgOlPkhq7jW6VVK0Z3axkADyMiypKVJQ5y_2A%3D%3D?uid=0&filename=2017-03-12_18-56-00.png&disposition=inline&hash=&limit=0&content_type=image%2Fpng&tknv=v2&size=XXL&crop=0" width="312">
 </p>
 
 `#block1` -- имя BEM-блока. Может определяться в начале файла, или передаваться при создании шаблона (Rionite передаёт `elementIs` компонента):
 ```js
-import { Template } from '@riim/beml';
+import { Template } from 'nelm';
 
 let template = new Template(`
 	div/element1 {
@@ -75,7 +75,7 @@ console.log(template.render());
 
 Использование в js:
 ```js
-import block1Template from './block1.beml';
+import block1Template from './block1.nelm';
 
 let block1XTemplate = block1Template.extend(`
 	#block1-x
@@ -112,4 +112,4 @@ console.log(block1XTemplate.render());
 
 ## Подсветка синтаксиса
 
-[vscode-beml](https://marketplace.visualstudio.com/items?itemName=riim.vscode-beml)
+[vscode-nelm](https://marketplace.visualstudio.com/items?itemName=riim.vscode-nelm)

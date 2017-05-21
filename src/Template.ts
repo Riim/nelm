@@ -56,9 +56,9 @@ export default class Template {
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
 
-	constructor(beml: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
+	constructor(nelm: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
 		let parent = this.parent = opts && opts.parent || null;
-		let block = typeof beml == 'string' ? new Parser(beml).parse() : beml;
+		let block = typeof nelm == 'string' ? new Parser(nelm).parse() : nelm;
 		let blockName = opts && opts.blockName || block.name;
 
 		this._elementClassesTemplate = parent ?
@@ -285,8 +285,8 @@ export default class Template {
 		}
 	}
 
-	extend(beml: string | IBlock, opts?: { blockName?: string }): Template {
-		return new Template(beml, { __proto__: opts || null, parent: this } as any);
+	extend(nelm: string | IBlock, opts?: { blockName?: string }): Template {
+		return new Template(nelm, { __proto__: opts || null, parent: this } as any);
 	}
 
 	setBlockName(blockName: string | null): Template {

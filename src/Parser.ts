@@ -78,17 +78,17 @@ function normalizeMultilineText(text: string): string {
 }
 
 export default class Parser {
-	beml: string;
+	nelm: string;
 	at: number;
 	chr: string;
 
-	constructor(beml: string) {
-		this.beml = beml;
+	constructor(nelm: string) {
+		this.nelm = nelm;
 	}
 
 	parse(): IBlock {
 		this.at = 0;
-		this.chr = this.beml.charAt(0);
+		this.chr = this.nelm.charAt(0);
 
 		let content: TContent | undefined;
 
@@ -115,7 +115,7 @@ export default class Parser {
 				name: 'SyntaxError',
 				message: 'Invalid block declaration',
 				at: this.at,
-				beml: this.beml
+				nelm: this.nelm
 			};
 		}
 
@@ -143,7 +143,7 @@ export default class Parser {
 							name: 'SyntaxError',
 							message: 'Missing "}" in compound statement',
 							at: this.at,
-							beml: this.beml
+							nelm: this.nelm
 						};
 					}
 
@@ -151,7 +151,7 @@ export default class Parser {
 				}
 				default: {
 					if (this.chr == '/') {
-						let next = this.beml.charAt(this.at + 1);
+						let next = this.nelm.charAt(this.at + 1);
 
 						if (next == '/' || next == '*') {
 							content.push(this._readComment());
@@ -166,10 +166,10 @@ export default class Parser {
 						}
 
 						reSuperCallOrNothing.lastIndex = this.at;
-						let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
+						let superCallMatch = (reSuperCallOrNothing.exec(this.nelm) as RegExpExecArray);
 
 						if (superCallMatch[0]) {
-							this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
+							this.chr = this.nelm.charAt((this.at = reSuperCallOrNothing.lastIndex));
 
 							content.push({
 								nodeType: NodeType.SUPER_CALL,
@@ -207,7 +207,7 @@ export default class Parser {
 				name: 'SyntaxError',
 				message: 'Expected element',
 				at,
-				beml: this.beml
+				nelm: this.nelm
 			};
 		}
 
@@ -255,7 +255,7 @@ export default class Parser {
 						name: 'SyntaxError',
 						message: 'Invalid attribute name',
 						at: this.at,
-						beml: this.beml
+						nelm: this.nelm
 					};
 				}
 
@@ -280,7 +280,7 @@ export default class Parser {
 									name: 'SyntaxError',
 									message: 'Invalid attribute',
 									at: this.at,
-									beml: this.beml
+									nelm: this.nelm
 								};
 							}
 
@@ -312,7 +312,7 @@ export default class Parser {
 					name: 'SyntaxError',
 					message: 'Invalid attributes',
 					at: this.at,
-					beml: this.beml
+					nelm: this.nelm
 				};
 			}
 		}
@@ -342,10 +342,10 @@ export default class Parser {
 
 	_readSuperCall(): ISuperCall | null {
 		reSuperCallOrNothing.lastIndex = this.at;
-		let superCallMatch = (reSuperCallOrNothing.exec(this.beml) as RegExpExecArray);
+		let superCallMatch = (reSuperCallOrNothing.exec(this.nelm) as RegExpExecArray);
 
 		if (superCallMatch[0]) {
-			this.chr = this.beml.charAt((this.at = reSuperCallOrNothing.lastIndex));
+			this.chr = this.nelm.charAt((this.at = reSuperCallOrNothing.lastIndex));
 
 			return {
 				nodeType: NodeType.SUPER_CALL,
@@ -373,7 +373,7 @@ export default class Parser {
 				name: 'SyntaxError',
 				message: `Expected "'" instead of "${ this.chr }"`,
 				at: this.at,
-				beml: this.beml
+				nelm: this.nelm
 			};
 		}
 
@@ -396,19 +396,19 @@ export default class Parser {
 					let at = this.at;
 
 					let hexadecimal = chr == 'x';
-					let code = parseInt(this.beml.slice(at + 1, at + (hexadecimal ? 3 : 5)), 16);
+					let code = parseInt(this.nelm.slice(at + 1, at + (hexadecimal ? 3 : 5)), 16);
 
 					if (!isFinite(code)) {
 						throw {
 							name: 'SyntaxError',
 							message: `Malformed ${ hexadecimal ? 'hexadecimal' : 'unicode' } escape sequence`,
 							at: at - 1,
-							beml: this.beml
+							nelm: this.nelm
 						}
 					}
 
 					str += String.fromCharCode(code);
-					chr = this.chr = this.beml.charAt((this.at = at + (hexadecimal ? 3 : 5)));
+					chr = this.chr = this.nelm.charAt((this.at = at + (hexadecimal ? 3 : 5)));
 				} else if (chr in escapee) {
 					str += escapee[chr];
 					chr = this._next();
@@ -429,7 +429,7 @@ export default class Parser {
 			name: 'SyntaxError',
 			message: 'Invalid string',
 			at: this.at,
-			beml: this.beml
+			nelm: this.nelm
 		};
 	}
 
@@ -467,7 +467,7 @@ export default class Parser {
 								name: 'SyntaxError',
 								message: 'Missing "*/" in compound statement',
 								at: this.at,
-								beml: this.beml
+								nelm: this.nelm
 							};
 						}
 						default: {
@@ -485,7 +485,7 @@ export default class Parser {
 					name: 'SyntaxError',
 					message: `Expected "/" instead of "${ this.chr }"`,
 					at: this.at,
-					beml: this.beml
+					nelm: this.nelm
 				}
 			}
 		}
@@ -516,10 +516,10 @@ export default class Parser {
 
 	_readName(reNameOrNothing: RegExp): string | null {
 		reNameOrNothing.lastIndex = this.at;
-		let name = (reNameOrNothing.exec(this.beml) as RegExpExecArray)[0];
+		let name = (reNameOrNothing.exec(this.nelm) as RegExpExecArray)[0];
 
 		if (name) {
-			this.chr = this.beml.charAt((this.at = reNameOrNothing.lastIndex));
+			this.chr = this.nelm.charAt((this.at = reNameOrNothing.lastIndex));
 			return name;
 		}
 
@@ -542,10 +542,10 @@ export default class Parser {
 				name: 'SyntaxError',
 				message: `Expected "${ current }" instead of "${ this.chr }"`,
 				at: this.at,
-				beml: this.beml
+				nelm: this.nelm
 			};
 		}
 
-		return (this.chr = this.beml.charAt(++this.at));
+		return (this.chr = this.nelm.charAt(++this.at));
 	}
 }

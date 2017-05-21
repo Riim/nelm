@@ -1,6 +1,6 @@
 {
-  "name": "@riim/beml",
-  "version": "0.3.20",
+  "name": "nelm",
+  "version": "0.4.0",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Riim/beml.git"
+    "url": "git+https://github.com/Riim/nelm.git"
   },
   "author": "Dmitry Vibe",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Riim/beml/issues"
+    "url": "https://github.com/Riim/nelm/issues"
   },
-  "homepage": "https://github.com/Riim/beml#readme",
+  "homepage": "https://github.com/Riim/nelm#readme",
   "devDependencies": {
     "jest-cli": "^20.0.1",
     "typescript": "^2.3.2"

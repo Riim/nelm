@@ -45,10 +45,10 @@ export interface IComment extends INode {
     multiline: boolean;
 }
 export default class Parser {
-    beml: string;
+    nelm: string;
     at: number;
     chr: string;
-    constructor(beml: string);
+    constructor(nelm: string);
     parse(): IBlock;
     _readBlockName(): string;
     _readContent(brackets: boolean): TContent;

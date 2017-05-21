@@ -36,12 +36,12 @@ export default class Template {
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
-    constructor(beml: string | IBlock, opts?: {
+    constructor(nelm: string | IBlock, opts?: {
         parent?: Template;
         blockName?: string;
     });
     _handleNode(node: INode, parentElementName?: string): void;
-    extend(beml: string | IBlock, opts?: {
+    extend(nelm: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
     setBlockName(blockName: string | null): Template;
