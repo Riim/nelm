@@ -91,8 +91,9 @@ export default class Parser {
 		this.chr = this.nelm.charAt(0);
 
 		let content: TContent | undefined;
+		let nextChr;
 
-		while (this._skipWhitespaces() == '/') {
+		while (this._skipWhitespaces() == '/' && ((nextChr = this.nelm.charAt(this.at + 1)) == '/' || nextChr == '*')) {
 			(content || (content = [])).push(this._readComment());
 		}
 
@@ -151,9 +152,9 @@ export default class Parser {
 				}
 				default: {
 					if (this.chr == '/') {
-						let next = this.nelm.charAt(this.at + 1);
+						let nextChr = this.nelm.charAt(this.at + 1);
 
-						if (next == '/' || next == '*') {
+						if (nextChr == '/' || nextChr == '*') {
 							content.push(this._readComment());
 							break;
 						}
@@ -325,11 +326,12 @@ export default class Parser {
 
 	_skipWhitespacesAndComments(): string {
 		let chr = this.chr;
+		let nextChr;
 
 		for (;;) {
 			if (chr && chr <= ' ') {
 				chr = this._next();
-			} else if (chr == '/') {
+			} else if (chr == '/' && ((nextChr = this.nelm.charAt(this.at + 1)) == '/' || nextChr == '*')) {
 				this._readComment();
 				chr = this.chr;
 			} else {
