@@ -41,6 +41,7 @@ export default class Template {
 	};
 
 	parent: Template | null;
+	nelm: IBlock;
 
 	_elementClassesTemplate: Array<string>;
 
@@ -57,24 +58,46 @@ export default class Template {
 	_elementRendererMap: IElementRendererMap;
 
 	constructor(nelm: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
-		let parent = this.parent = opts && opts.parent || null;
-		let block = typeof nelm == 'string' ? new Parser(nelm).parse() : nelm;
-		let blockName = opts && opts.blockName || block.name;
+		this.parent = opts && opts.parent || null;
+		this.nelm = typeof nelm == 'string' ? new Parser(nelm).parse() : nelm;
 
-		this._elementClassesTemplate = parent ?
-			[blockName ? blockName + elDelimiter : ''].concat(parent._elementClassesTemplate) :
+		let blockName = opts && opts.blockName || this.nelm.name;
+
+		this._elementClassesTemplate = this.parent ?
+			[blockName ? blockName + elDelimiter : ''].concat(this.parent._elementClassesTemplate) :
 			[blockName ? blockName + elDelimiter : '', ''];
+	}
+
+	extend(nelm: string | IBlock, opts?: { blockName?: string }): Template {
+		return new Template(nelm, { __proto__: opts || null, parent: this } as any);
+	}
+
+	setBlockName(blockName: string | null): Template {
+		this._elementClassesTemplate[0] = blockName ? blockName + elDelimiter : '';
+		return this;
+	}
+
+	render(): string {
+		return (this._renderer || this._compileRenderers()).call(this._elementRendererMap);
+	}
+
+	_compileRenderers(): IRenderer {
+		let parent = this.parent;
 
 		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
 		let elMap = this._elementMap = {} as { [elName: string]: ITemplateElement };
 
-		for (let node of block.content) {
-			this._handleNode(node);
+		if (parent) {
+			this._renderer = parent._renderer || parent._compileRenderers();
 		}
 
-		this._renderer = parent ?
-			parent._renderer :
-			Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as IRenderer;
+		for (let node of this.nelm.content) {
+			this._compileNode(node);
+		}
+
+		if (!parent) {
+			this._renderer = Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as IRenderer;
+		}
 
 		Object.keys(elMap).forEach(function(this: IElementRendererMap, name: string) {
 			let el = elMap[name];
@@ -90,9 +113,11 @@ export default class Template {
 					IElementRenderer;
 			}
 		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
+
+		return this._renderer;
 	}
 
-	_handleNode(node: INode, parentElementName?: string) {
+	_compileNode(node: INode, parentElementName?: string) {
 		switch (node.nodeType) {
 			case NodeType.ELEMENT: {
 				let parent = this.parent;
@@ -120,9 +145,8 @@ export default class Template {
 
 						if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
 							let attrListMap = this._attributeListMap || (
-								this._attributeListMap = {
-									__proto__: parent && parent._attributeListMap || null
-								} as any
+								this._attributeListMap = { __proto__: parent && parent._attributeListMap || null } as
+									any
 							);
 							let attrCountMap = this._attributeCountMap || (
 								this._attributeCountMap = {
@@ -172,15 +196,15 @@ export default class Template {
 							};
 
 							if (hasAttrClass) {
-								attrList[attrList['class']] = ` class="<<${ elNames.join(',') }>> ` +
+								attrList[attrList['class']] = ' class="' + this._renderElementClasses(elNames) +
 									attrList[attrList['class']].slice(' class="'.length);
 							} else {
-								attrList[attrCount] = ` class="<<${ elNames.join(',') }>>"`;
+								attrList[attrCount] = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
 							}
 
 							renderedAttrs = join.call(attrList, '');
 						} else if (!isHelper) {
-							renderedAttrs = ` class="<<${ elNames.join(',') }>>"`;
+							renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
 						} else {
 							renderedAttrs = '';
 						}
@@ -205,15 +229,17 @@ export default class Template {
 						this._elementMap[elName] = currentEl;
 					} else if (!isHelper) {
 						if (elAttrs && elAttrs.list.length) {
-							let elNamesInsert;
+							let renderedClasses;
 							let attrs = '';
 
 							for (let attr of elAttrs.list) {
 								let value = attr.value;
 
 								if (attr.name == 'class') {
-									elNamesInsert = `<<${ elNames.slice(1).join(',') }>>`;
-									attrs += ` class="${ value ? elNamesInsert + ' ' + value : elNamesInsert }"`;
+									renderedClasses = this._renderElementClasses(elNames);
+									attrs += ` class="${
+										value ? renderedClasses + value : renderedClasses.slice(0, -1)
+									}"`;
 								} else {
 									attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
 								}
@@ -221,12 +247,16 @@ export default class Template {
 
 							this._currentElement.innerSource.push(
 								`'<${ tagName || 'div' }${
-									elNamesInsert ? attrs : ` class="<<${ elNames.slice(1).join(',') }>>"` + attrs
+									renderedClasses ?
+										attrs :
+										` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
 								}>'`
 							);
 						} else {
 							this._currentElement.innerSource.push(
-								`'<${ tagName || 'div' } class="<<${ elNames.slice(1).join(',') }>>">'`
+								`'<${ tagName || 'div' } class="${
+									this._renderElementClasses(elNames).slice(0, -1)
+								}">'`
 							);
 						}
 					}
@@ -253,12 +283,12 @@ export default class Template {
 
 					if (content) {
 						for (let contentNode of content) {
-							this._handleNode(contentNode, elName || parentElementName);
+							this._compileNode(contentNode, elName || parentElementName);
 						}
 					}
 				} else if (content) {
 					for (let contentNode of content) {
-						this._handleNode(contentNode, elName || parentElementName);
+						this._compileNode(contentNode, elName || parentElementName);
 					}
 				}
 
@@ -285,29 +315,18 @@ export default class Template {
 		}
 	}
 
-	extend(nelm: string | IBlock, opts?: { blockName?: string }): Template {
-		return new Template(nelm, { __proto__: opts || null, parent: this } as any);
-	}
-
-	setBlockName(blockName: string | null): Template {
-		this._elementClassesTemplate[0] = blockName ? blockName + elDelimiter : '';
-		return this;
-	}
-
-	render() {
-		return this._renderer.call(this._elementRendererMap).replace(
-			/<<([^>]+)>>/g,
-			(match: RegExpMatchArray, names: string): string => this._renderElementClasses(names.split(','))
-		);
-	}
-
 	_renderElementClasses(elNames: Array<string | null>): string {
-		let elClasses = '';
+		let elClasses = elNames[0] ? this._elementClassesTemplate.join(elNames[0] + ' ') : '';
+		let elNameCount = elNames.length;
 
-		for (let i = 0, l = elNames.length; i < l; i++) {
-			elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+		if (elNameCount > 1) {
+			let i = 1;
+
+			do {
+				elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+			} while (++i < elNameCount);
 		}
 
-		return elClasses.slice(0, -1);
+		return elClasses;
 	}
 }

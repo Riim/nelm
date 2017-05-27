@@ -19,6 +19,7 @@ export default class Template {
         [name: string]: (el: IElement) => TContent | null;
     };
     parent: Template | null;
+    nelm: IBlock;
     _elementClassesTemplate: Array<string>;
     _tagNameMap: {
         [elName: string]: string;
@@ -40,11 +41,12 @@ export default class Template {
         parent?: Template;
         blockName?: string;
     });
-    _handleNode(node: INode, parentElementName?: string): void;
     extend(nelm: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
     setBlockName(blockName: string | null): Template;
-    render(): any;
+    render(): string;
+    _compileRenderers(): IRenderer;
+    _compileNode(node: INode, parentElementName?: string): void;
     _renderElementClasses(elNames: Array<string | null>): string;
 }
