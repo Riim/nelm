@@ -12,4 +12,10 @@ export {
 	IComment,
 	default as Parser
 } from './Parser';
-export { default as Template } from './Template';
+export {
+	IElement as ITemplateElement,
+	IRenderer as ITemplateRenderer,
+	IElementRenderer as ITemplateElementRenderer,
+	IElementRendererMap as ITemplateElementRendererMap,
+	default as Template
+} from './Template';

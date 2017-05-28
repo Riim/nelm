@@ -6,7 +6,7 @@ import {
 	INode,
 	TContent,
 	IBlock,
-	IElement,
+	IElement as INelmElement,
 	ITextNode,
 	ISuperCall,
 	default as Parser
@@ -14,7 +14,7 @@ import {
 
 let join = Array.prototype.join;
 
-export interface ITemplateElement {
+export interface IElement {
 	name: string | null;
 	superCall: boolean;
 	source: Array<string> | null;
@@ -36,7 +36,7 @@ export interface IElementRendererMap {
 let elDelimiter = '__';
 
 export default class Template {
-	static helpers: { [name: string]: (el: IElement) => TContent | null } = {
+	static helpers: { [name: string]: (el: INelmElement) => TContent | null } = {
 		section: el => el.content
 	};
 
@@ -50,9 +50,9 @@ export default class Template {
 	_attributeListMap: { [elName: string]: Object };
 	_attributeCountMap: { [elName: string]: number };
 
-	_currentElement: ITemplateElement;
-	_elements: Array<ITemplateElement>;
-	_elementMap: { [elName: string]: ITemplateElement };
+	_currentElement: IElement;
+	_elements: Array<IElement>;
+	_elementMap: { [elName: string]: IElement };
 
 	_renderer: IRenderer;
 	_elementRendererMap: IElementRendererMap;
@@ -85,7 +85,7 @@ export default class Template {
 		let parent = this.parent;
 
 		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
-		let elMap = this._elementMap = {} as { [elName: string]: ITemplateElement };
+		let elMap = this._elementMap = {} as { [elName: string]: IElement };
 
 		if (parent) {
 			this._renderer = parent._renderer || parent._compileRenderers();
@@ -122,7 +122,7 @@ export default class Template {
 			case NodeType.ELEMENT: {
 				let parent = this.parent;
 				let els = this._elements;
-				let el = node as IElement;
+				let el = node as INelmElement;
 				let tagName = el.tagName;
 				let isHelper = el.isHelper;
 				let elNames = el.names;

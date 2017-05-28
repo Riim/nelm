@@ -1,5 +1,5 @@
-import { INode, TContent, IBlock, IElement } from './Parser';
-export interface ITemplateElement {
+import { INode, TContent, IBlock, IElement as INelmElement } from './Parser';
+export interface IElement {
     name: string | null;
     superCall: boolean;
     source: Array<string> | null;
@@ -16,7 +16,7 @@ export interface IElementRendererMap {
 }
 export default class Template {
     static helpers: {
-        [name: string]: (el: IElement) => TContent | null;
+        [name: string]: (el: INelmElement) => TContent | null;
     };
     parent: Template | null;
     nelm: IBlock;
@@ -30,10 +30,10 @@ export default class Template {
     _attributeCountMap: {
         [elName: string]: number;
     };
-    _currentElement: ITemplateElement;
-    _elements: Array<ITemplateElement>;
+    _currentElement: IElement;
+    _elements: Array<IElement>;
     _elementMap: {
-        [elName: string]: ITemplateElement;
+        [elName: string]: IElement;
     };
     _renderer: IRenderer;
     _elementRendererMap: IElementRendererMap;
