@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var escape_string_1 = require("escape-string");
 var escape_html_1 = require("@riim/escape-html");
+var self_closing_tags_1 = require("@riim/self-closing-tags");
 var Parser_1 = require("./Parser");
-var selfClosingTags_1 = require("./selfClosingTags");
 var join = Array.prototype.join;
 var elDelimiter = '__';
 var Template = (function () {
@@ -137,7 +137,7 @@ var Template = (function () {
                                 "'<" + (tagName || 'div') + renderedAttrs + ">'",
                                 content && content.length ?
                                     "this['" + elName + "@content']() + '</" + (tagName || 'div') + ">'" :
-                                    (!content && tagName && tagName in selfClosingTags_1.default ?
+                                    (!content && tagName && tagName in self_closing_tags_1.map ?
                                         "''" :
                                         "'</" + (tagName || 'div') + ">'")
                             ],
@@ -200,7 +200,7 @@ var Template = (function () {
                     this._currentElement = els[els.length - 1];
                     this._currentElement.innerSource.push("this['" + elName + "']()");
                 }
-                else if (!isHelper && (content || !tagName || !(tagName in selfClosingTags_1.default))) {
+                else if (!isHelper && (content || !tagName || !(tagName in self_closing_tags_1.map))) {
                     this._currentElement.innerSource.push("'</" + (tagName || 'div') + ">'");
                 }
                 break;
