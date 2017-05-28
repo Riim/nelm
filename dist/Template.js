@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var nelm_parser_1 = require("nelm-parser");
 var escape_string_1 = require("escape-string");
 var escape_html_1 = require("@riim/escape-html");
 var self_closing_tags_1 = require("@riim/self-closing-tags");
-var Parser_1 = require("./Parser");
 var join = Array.prototype.join;
 var elDelimiter = '__';
 var Template = (function () {
     function Template(nelm, opts) {
         this.parent = opts && opts.parent || null;
-        this.nelm = typeof nelm == 'string' ? new Parser_1.default(nelm).parse() : nelm;
+        this.nelm = typeof nelm == 'string' ? new nelm_parser_1.Parser(nelm).parse() : nelm;
         var blockName = opts && opts.blockName || this.nelm.name;
         this._elementClassesTemplate = this.parent ?
             [blockName ? blockName + elDelimiter : ''].concat(this.parent._elementClassesTemplate) :
@@ -55,7 +55,7 @@ var Template = (function () {
     };
     Template.prototype._compileNode = function (node, parentElementName) {
         switch (node.nodeType) {
-            case Parser_1.NodeType.ELEMENT: {
+            case nelm_parser_1.NodeType.ELEMENT: {
                 var parent_1 = this.parent;
                 var els = this._elements;
                 var el = node;
@@ -205,11 +205,11 @@ var Template = (function () {
                 }
                 break;
             }
-            case Parser_1.NodeType.TEXT: {
+            case nelm_parser_1.NodeType.TEXT: {
                 this._currentElement.innerSource.push("'" + escape_string_1.default(node.value) + "'");
                 break;
             }
-            case Parser_1.NodeType.SUPER_CALL: {
+            case nelm_parser_1.NodeType.SUPER_CALL: {
                 this._currentElement.innerSource
                     .push("$super['" + (node.elementName || parentElementName) + "@content'].call(this)");
                 this._currentElement.superCall = true;

@@ -1,4 +1,4 @@
-import { INode, TContent, IBlock, IElement as INelmElement } from './Parser';
+import { INode, TContent, IBlock, IElement as INelmElement } from 'nelm-parser';
 export interface IElement {
     name: string | null;
     superCall: boolean;

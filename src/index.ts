@@ -11,7 +11,7 @@ export {
 	ITextNode,
 	IComment,
 	default as Parser
-} from './Parser';
+} from 'nelm-parser';
 export {
 	IElement as ITemplateElement,
 	IRenderer as ITemplateRenderer,

@@ -1,6 +1,3 @@
-import escapeString from 'escape-string';
-import escapeHTML from '@riim/escape-html';
-import { map as selfClosingTags } from '@riim/self-closing-tags';
 import {
 	NodeType,
 	INode,
@@ -9,8 +6,11 @@ import {
 	IElement as INelmElement,
 	ITextNode,
 	ISuperCall,
-	default as Parser
-} from './Parser';
+	Parser
+} from 'nelm-parser';
+import escapeString from 'escape-string';
+import escapeHTML from '@riim/escape-html';
+import { map as selfClosingTags } from '@riim/self-closing-tags';
 
 let join = Array.prototype.join;
 

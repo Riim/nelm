@@ -1,4 +1,4 @@
-let NodeType = require('../dist/Parser').NodeType;
+let NodeType = require('nelm-parser').NodeType;
 let Template = require('../dist/Template').default;
 
 test('simple template', () => {
