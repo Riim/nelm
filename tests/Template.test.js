@@ -93,7 +93,7 @@ test('attributes super', () => {
 	expect(t1.extend(`
 		#block1-x
 		/el1 (super!)
-	`).render()).toBe('<span attr1="value1" attr2="value2" class="block1-x__el1 block1__el1"></span>');
+	`).render()).toBe('<span class="block1-x__el1 block1__el1" attr1="value1" attr2="value2"></span>');
 });
 
 test('attributes super 2', () => {
@@ -226,7 +226,7 @@ test('helper attributes super', () => {
 	expect(t1.extend(`
 		#block1-x
 		@/test (super!, attr2=value2)
-	`).render()).toBe('<span attr1="value1" attr2="value2" class="block1-x__span block1__span"></span>');
+	`).render()).toBe('<span class="block1-x__span block1__span" attr1="value1" attr2="value2"></span>');
 });
 
 test('escape sequences', () => {
