@@ -60,12 +60,13 @@ test('content super 2', () => {
 	let t1 = new Template(`
 		#block1
 		span/el1
+		span/el2
 	`);
 
 	expect(t1.extend(`
 		#block1-x
-		div/el1 { super! }
-	`).render()).toBe('<div class="block1-x__el1 block1__el1"></div>');
+		div/el2 { super! }
+	`).render()).toBe('<span class="block1-x__el1 block1__el1"></span><div class="block1-x__el2 block1__el2"></div>');
 });
 
 test('content super.el-name', () => {

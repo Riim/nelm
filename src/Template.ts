@@ -78,7 +78,10 @@ export default class Template {
 	}
 
 	render(): string {
-		return (this._renderer || this._compileRenderers()).call(this._elementRendererMap);
+		return (this._renderer || this._compileRenderers()).call(this._elementRendererMap).replace(
+			/<<([^>]+)>>/g,
+			(match: RegExpMatchArray, names: string): string => this._renderElementClasses(names.split(','))
+		);
 	}
 
 	_compileRenderers(): IRenderer {
@@ -155,7 +158,7 @@ export default class Template {
 							);
 
 							let elAttrsSuperCall = elAttrs.superCall;
-							let attrList: Object;
+							let attrList: { [key: string]: any };
 							let attrCount: number;
 
 							if (elAttrsSuperCall) {
@@ -194,17 +197,17 @@ export default class Template {
 								};
 
 								if (attrList['class'] !== undefined) {
-									attrList[attrList['class']] = ' class="' + this._renderElementClasses(elNames) +
+									attrList[attrList['class']] = ` class="<<${ elNames.join(',') }>> ` +
 										attrList[attrList['class']].slice(' class="'.length);
 
 									renderedAttrs = join.call(attrList, '');
 								} else {
-									renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` +
+									renderedAttrs = ` class="<<${ elNames.join(',') }>>"` +
 										join.call(attrList, '');
 								}
 							}
 						} else if (!isHelper) {
-							renderedAttrs = ` class="${ this._renderElementClasses(elNames).slice(0, -1) }"`;
+							renderedAttrs = ` class="<<${ elNames.join(',') }>>"`;
 						}
 
 						let currentEl = {
@@ -227,18 +230,16 @@ export default class Template {
 						this._elementMap[elName] = currentEl;
 					} else if (!isHelper) {
 						if (elAttrs && elAttrs.list.length) {
-							let renderedClasses;
+							let hasClassAttr = false;
 							let attrs = '';
 
 							for (let attr of elAttrs.list) {
 								let value = attr.value;
 
 								if (attr.name == 'class') {
-									renderedClasses = this._renderElementClasses(elNames);
-									attrs += ` class="${
-										value ?
-											renderedClasses + escapeHTML(escapeString(value)) :
-											renderedClasses.slice(0, -1)
+									hasClassAttr = true;
+									attrs += ` class="<<${ elNames.join(',').slice(1) }>>${
+										value ? ' ' + value : ''
 									}"`;
 								} else {
 									attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
@@ -247,16 +248,12 @@ export default class Template {
 
 							this._currentElement.innerSource.push(
 								`'<${ tagName || 'div' }${
-									renderedClasses ?
-										attrs :
-										` class="${ this._renderElementClasses(elNames).slice(0, -1) }"` + attrs
+									hasClassAttr ? attrs : ` class="<<${ elNames.join(',').slice(1) }>>"` + attrs
 								}>'`
 							);
 						} else {
 							this._currentElement.innerSource.push(
-								`'<${ tagName || 'div' } class="${
-									this._renderElementClasses(elNames).slice(0, -1)
-								}">'`
+								`'<${ tagName || 'div' } class="<<${ elNames.join(',').slice(1) }>>">'`
 							);
 						}
 					}
@@ -318,17 +315,12 @@ export default class Template {
 	}
 
 	_renderElementClasses(elNames: Array<string | null>): string {
-		let elClasses = elNames[0] ? this._elementClassesTemplate.join(elNames[0] + ' ') : '';
-		let elNameCount = elNames.length;
+		let elClasses = '';
 
-		if (elNameCount > 1) {
-			let i = 1;
-
-			do {
-				elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
-			} while (++i < elNameCount);
+		for (let i = 0, l = elNames.length; i < l; i++) {
+			elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
 		}
 
-		return elClasses;
-	}
+		return elClasses.slice(0, -1);
+  	}
 }

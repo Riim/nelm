@@ -10,7 +10,6 @@
 		"outDir": "dist",
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
-		"suppressImplicitAnyIndexErrors": true,
 		"target": "es5"
 	},
 	"files": [

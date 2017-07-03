@@ -23,7 +23,8 @@ var Template = (function () {
         return this;
     };
     Template.prototype.render = function () {
-        return (this._renderer || this._compileRenderers()).call(this._elementRendererMap);
+        var _this = this;
+        return (this._renderer || this._compileRenderers()).call(this._elementRendererMap).replace(/<<([^>]+)>>/g, function (match, names) { return _this._renderElementClasses(names.split(',')); });
     };
     Template.prototype._compileRenderers = function () {
         var parent = this.parent;
@@ -117,18 +118,18 @@ var Template = (function () {
                                     length: attrCount
                                 };
                                 if (attrList['class'] !== undefined) {
-                                    attrList[attrList['class']] = ' class="' + this._renderElementClasses(elNames) +
+                                    attrList[attrList['class']] = " class=\"<<" + elNames.join(',') + ">> " +
                                         attrList[attrList['class']].slice(' class="'.length);
                                     renderedAttrs = join.call(attrList, '');
                                 }
                                 else {
-                                    renderedAttrs = " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"" +
+                                    renderedAttrs = " class=\"<<" + elNames.join(',') + ">>\"" +
                                         join.call(attrList, '');
                                 }
                             }
                         }
                         else if (!isHelper) {
-                            renderedAttrs = " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"";
+                            renderedAttrs = " class=\"<<" + elNames.join(',') + ">>\"";
                         }
                         var currentEl = {
                             name: elName,
@@ -148,27 +149,23 @@ var Template = (function () {
                     }
                     else if (!isHelper) {
                         if (elAttrs && elAttrs.list.length) {
-                            var renderedClasses = void 0;
+                            var hasClassAttr = false;
                             var attrs = '';
                             for (var _b = 0, _c = elAttrs.list; _b < _c.length; _b++) {
                                 var attr = _c[_b];
                                 var value = attr.value;
                                 if (attr.name == 'class') {
-                                    renderedClasses = this._renderElementClasses(elNames);
-                                    attrs += " class=\"" + (value ?
-                                        renderedClasses + escape_html_1.default(escape_string_1.default(value)) :
-                                        renderedClasses.slice(0, -1)) + "\"";
+                                    hasClassAttr = true;
+                                    attrs += " class=\"<<" + elNames.join(',').slice(1) + ">>" + (value ? ' ' + value : '') + "\"";
                                 }
                                 else {
                                     attrs += " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
                                 }
                             }
-                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (renderedClasses ?
-                                attrs :
-                                " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\"" + attrs) + ">'");
+                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (hasClassAttr ? attrs : " class=\"<<" + elNames.join(',').slice(1) + ">>\"" + attrs) + ">'");
                         }
                         else {
-                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"" + this._renderElementClasses(elNames).slice(0, -1) + "\">'");
+                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"<<" + elNames.join(',').slice(1) + ">>\">'");
                         }
                     }
                 }
@@ -222,19 +219,15 @@ var Template = (function () {
         }
     };
     Template.prototype._renderElementClasses = function (elNames) {
-        var elClasses = elNames[0] ? this._elementClassesTemplate.join(elNames[0] + ' ') : '';
-        var elNameCount = elNames.length;
-        if (elNameCount > 1) {
-            var i = 1;
-            do {
-                elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
-            } while (++i < elNameCount);
+        var elClasses = '';
+        for (var i = 0, l = elNames.length; i < l; i++) {
+            elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
         }
-        return elClasses;
+        return elClasses.slice(0, -1);
+    };
+    Template.helpers = {
+        section: function (el) { return el.content; }
     };
     return Template;
 }());
-Template.helpers = {
-    section: function (el) { return el.content; }
-};
 exports.default = Template;
