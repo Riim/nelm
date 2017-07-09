@@ -174,7 +174,7 @@ test('helper', () => {
 	`).render()).toBe('<span>123</span>');
 });
 
-test('overriding helper', () => {
+test('helper 2', () => {
 	Template.helpers.test = el => {
 		return [
 			{ nodeType: NodeType.TEXT, value: '[' },
@@ -191,6 +191,31 @@ test('overriding helper', () => {
 	`).render()).toBe('<span>[<div></div>]</span>');
 });
 
+test('helper super', () => {
+	Template.helpers.test = el => {
+		return [{
+			nodeType: NodeType.ELEMENT,
+			isHelper: false,
+			tagName: 'span',
+			names: el.names && el.names[0] ? ['$' + el.names[0], ...el.names] : el.names,
+			attributes: el.attributes,
+			content: null
+		}];
+	};
+
+	let t1 = new Template(`
+		#block1
+		@test/test (attr1=value1)
+	`);
+
+	expect(t1.extend(`
+		#block1-x
+		@/test (super!, attr2=value2)
+	`).render()).toBe(
+		'<span class="block1-x__$test block1__$test block1-x__test block1__test" attr1="value1" attr2="value2"></span>'
+	);
+});
+
 test('helper content super', () => {
 	let t1 = new Template(`
 		#block1
@@ -205,29 +230,6 @@ test('helper content super', () => {
 			div { super! }
 		}
 	`).render()).toBe('<div><span></span></div>');
-});
-
-test('helper attributes super', () => {
-	Template.helpers.test = el => {
-		return [{
-			nodeType: NodeType.ELEMENT,
-			isHelper: false,
-			tagName: 'span',
-			names: ['span'],
-			attributes: el.attributes,
-			content: null
-		}];
-	};
-
-	let t1 = new Template(`
-		#block1
-		@test/test (attr1=value1)
-	`);
-
-	expect(t1.extend(`
-		#block1-x
-		@/test (super!, attr2=value2)
-	`).render()).toBe('<span class="block1-x__span block1__span" attr1="value1" attr2="value2"></span>');
 });
 
 test('escape sequences', () => {

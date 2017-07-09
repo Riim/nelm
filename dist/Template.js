@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var nelm_parser_1 = require("nelm-parser");
-var escape_string_1 = require("escape-string");
 var escape_html_1 = require("@riim/escape-html");
 var self_closing_tags_1 = require("@riim/self-closing-tags");
+var escape_string_1 = require("escape-string");
+var nelm_parser_1 = require("nelm-parser");
 var join = Array.prototype.join;
 var elNameDelimiter = '__';
 var Template = (function () {
@@ -176,7 +176,7 @@ var Template = (function () {
                 }
                 if (isHelper) {
                     if (!tagName) {
-                        throw new TypeError('tagName is required');
+                        throw new TypeError('"tagName" is required');
                     }
                     var helper = Template.helpers[tagName];
                     if (!helper) {

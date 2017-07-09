@@ -1,16 +1,16 @@
-import {
-	NodeType,
-	INode,
-	TContent,
-	IBlock,
-	IElement as INelmElement,
-	ITextNode,
-	ISuperCall,
-	Parser
-} from 'nelm-parser';
-import escapeString from 'escape-string';
 import escapeHTML from '@riim/escape-html';
 import { map as selfClosingTags } from '@riim/self-closing-tags';
+import escapeString from 'escape-string';
+import {
+	IBlock,
+	IElement as INelmElement,
+	INode,
+	ISuperCall,
+	ITextNode,
+	NodeType,
+	Parser,
+	TContent
+	} from 'nelm-parser';
 
 let join = Array.prototype.join;
 
@@ -269,7 +269,7 @@ export default class Template {
 
 				if (isHelper) {
 					if (!tagName) {
-						throw new TypeError('tagName is required');
+						throw new TypeError('"tagName" is required');
 					}
 
 					let helper = Template.helpers[tagName];
