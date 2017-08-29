@@ -6,7 +6,7 @@ var escape_string_1 = require("escape-string");
 var nelm_parser_1 = require("nelm-parser");
 var join = Array.prototype.join;
 var elNameDelimiter = '__';
-var Template = (function () {
+var Template = /** @class */ (function () {
     function Template(nelm, opts) {
         this.parent = opts && opts.parent || null;
         this.nelm = typeof nelm == 'string' ? new nelm_parser_1.Parser(nelm).parse() : nelm;
