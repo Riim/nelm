@@ -21,23 +21,19 @@ export interface IElement {
 	innerSource: Array<string>;
 }
 
-export interface IRenderer {
-	(this: IElementRendererMap): string;
-}
+export type TRenderer = (this: IElementRendererMap) => string;
 
-export interface IElementRenderer {
-	(this: IElementRendererMap, $super?: IElementRendererMap): string;
-}
+export type TElementRenderer = (this: IElementRendererMap, $super?: IElementRendererMap) => string;
 
 export interface IElementRendererMap {
-	[elName: string]: IElementRenderer;
+	[elName: string]: TElementRenderer;
 }
 
 let elNameDelimiter = '__';
 
 export default class Template {
 	static helpers: { [name: string]: (el: INelmElement) => TContent | null } = {
-		section: el => el.content
+		section: (el) => el.content
 	};
 
 	parent: Template | null;
@@ -54,7 +50,7 @@ export default class Template {
 	_elements: Array<IElement>;
 	_elementMap: { [elName: string]: IElement };
 
-	_renderer: IRenderer;
+	_renderer: TRenderer;
 	_elementRendererMap: IElementRendererMap;
 
 	constructor(nelm: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
@@ -84,7 +80,7 @@ export default class Template {
 		);
 	}
 
-	_compileRenderers(): IRenderer {
+	_compileRenderers(): TRenderer {
 		let parent = this.parent;
 
 		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
@@ -99,21 +95,21 @@ export default class Template {
 		}
 
 		if (!parent) {
-			this._renderer = Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as IRenderer;
+			this._renderer = Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as TRenderer;
 		}
 
 		Object.keys(elMap).forEach(function(this: IElementRendererMap, name: string) {
 			let el = elMap[name];
 
-			this[name] = Function(`return ${ (el.source as Array<string>).join(' + ') };`) as IElementRenderer;
+			this[name] = Function(`return ${ (el.source as Array<string>).join(' + ') };`) as TElementRenderer;
 
 			if (el.superCall) {
-				let inner = Function('$super', `return ${ el.innerSource.join(' + ') || "''" };`) as IElementRenderer;
+				let inner = Function('$super', `return ${ el.innerSource.join(' + ') || "''" };`) as TElementRenderer;
 				let parentElementRendererMap = parent && parent._elementRendererMap;
 				this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
 			} else {
 				this[name + '@content'] = Function(`return ${ el.innerSource.join(' + ') || "''" };`) as
-					IElementRenderer;
+					TElementRenderer;
 			}
 		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
 
@@ -261,7 +257,7 @@ export default class Template {
 					this._currentElement.innerSource.push(`'<${ tagName || 'div' }${
 						elAttrs ?
 							elAttrs.list.map(
-								attr => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
+								(attr) => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
 							).join('') :
 							''
 					}>'`);
@@ -322,5 +318,5 @@ export default class Template {
 		}
 
 		return elClasses.slice(0, -1);
-  	}
+	}
 }

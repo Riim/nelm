@@ -14,8 +14,8 @@ export {
 } from 'nelm-parser';
 export {
 	IElement as ITemplateElement,
-	IRenderer as ITemplateRenderer,
-	IElementRenderer as ITemplateElementRenderer,
+	TRenderer as TTemplateRenderer,
+	TElementRenderer as TTemplateElementRenderer,
 	IElementRendererMap as ITemplateElementRendererMap,
 	default as Template
 } from './Template';

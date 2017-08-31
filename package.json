@@ -1,12 +1,12 @@
 {
   "name": "nelm",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "build": "rm -rf ./dist && ./node_modules/.bin/tsc",
-    "test": "./node_modules/.bin/jest"
+    "build": "rm -rf dist && node_modules/.bin/tsc",
+    "test": "node_modules/.bin/jest"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,7 @@
     "@riim/escape-html": "^1.1.0",
     "@riim/self-closing-tags": "^1.0.1",
     "escape-string": "^1.0.1",
-    "nelm-parser": "^1.1.5"
+    "nelm-parser": "^1.1.6"
   },
   "jest": {
     "testEnvironment": "node"

@@ -5,14 +5,10 @@ export interface IElement {
     source: Array<string> | null;
     innerSource: Array<string>;
 }
-export interface IRenderer {
-    (this: IElementRendererMap): string;
-}
-export interface IElementRenderer {
-    (this: IElementRendererMap, $super?: IElementRendererMap): string;
-}
+export declare type TRenderer = (this: IElementRendererMap) => string;
+export declare type TElementRenderer = (this: IElementRendererMap, $super?: IElementRendererMap) => string;
 export interface IElementRendererMap {
-    [elName: string]: IElementRenderer;
+    [elName: string]: TElementRenderer;
 }
 export default class Template {
     static helpers: {
@@ -35,7 +31,7 @@ export default class Template {
     _elementMap: {
         [elName: string]: IElement;
     };
-    _renderer: IRenderer;
+    _renderer: TRenderer;
     _elementRendererMap: IElementRendererMap;
     constructor(nelm: string | IBlock, opts?: {
         parent?: Template;
@@ -46,7 +42,7 @@ export default class Template {
     }): Template;
     setBlockName(blockName: string | null): Template;
     render(): string;
-    _compileRenderers(): IRenderer;
+    _compileRenderers(): TRenderer;
     _compileNode(node: INode, parentElName?: string): void;
     _renderElementClasses(elNames: Array<string | null>): string;
 }
