@@ -104,12 +104,12 @@ var Template = /** @class */ (function () {
                                 var value = attr.value;
                                 var index = attrList[name_1];
                                 if (index === undefined) {
-                                    attrList[attrCount] = " " + name_1 + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
+                                    attrList[attrCount] = " " + name_1 + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                     attrList[name_1] = attrCount;
                                     attrCountMap[elName] = ++attrCount;
                                 }
                                 else {
-                                    attrList[index] = " " + name_1 + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
+                                    attrList[index] = " " + name_1 + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                 }
                             }
                             if (!isHelper) {
@@ -159,7 +159,7 @@ var Template = /** @class */ (function () {
                                     attrs += " class=\"<<" + elNames.join(',').slice(1) + ">>" + (value ? ' ' + value : '') + "\"";
                                 }
                                 else {
-                                    attrs += " " + attr.name + "=\"" + (value && escape_html_1.default(escape_string_1.default(value))) + "\"";
+                                    attrs += " " + attr.name + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                 }
                             }
                             this._currentElement.innerSource.push("'<" + (tagName || 'div') + (hasClassAttr ? attrs : " class=\"<<" + elNames.join(',').slice(1) + ">>\"" + attrs) + ">'");
@@ -171,7 +171,7 @@ var Template = /** @class */ (function () {
                 }
                 else if (!isHelper) {
                     this._currentElement.innerSource.push("'<" + (tagName || 'div') + (elAttrs ?
-                        elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.default(escape_string_1.default(attr.value))) + "\""; }).join('') :
+                        elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.escapeHTML(escape_string_1.escapeString(attr.value))) + "\""; }).join('') :
                         '') + ">'");
                 }
                 if (isHelper) {
@@ -207,7 +207,7 @@ var Template = /** @class */ (function () {
                 break;
             }
             case nelm_parser_1.NodeType.TEXT: {
-                this._currentElement.innerSource.push("'" + escape_string_1.default(node.value) + "'");
+                this._currentElement.innerSource.push("'" + escape_string_1.escapeString(node.value) + "'");
                 break;
             }
             case nelm_parser_1.NodeType.SUPER_CALL: {

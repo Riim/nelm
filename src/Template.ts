@@ -1,6 +1,6 @@
-import escapeHTML from '@riim/escape-html';
+import { escapeHTML } from '@riim/escape-html';
 import { map as selfClosingTagMap } from '@riim/self-closing-tags';
-import escapeString from 'escape-string';
+import { escapeString } from 'escape-string';
 import {
 	IBlock,
 	IElement as INelmElement,
