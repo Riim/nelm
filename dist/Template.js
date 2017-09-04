@@ -138,7 +138,7 @@ var Template = /** @class */ (function () {
                                 "'<" + (tagName || 'div') + renderedAttrs + ">'",
                                 content && content.length ?
                                     "this['" + elName + "@content']() + '</" + (tagName || 'div') + ">'" :
-                                    (!content && tagName && tagName in self_closing_tags_1.map ?
+                                    (!content && tagName && self_closing_tags_1.map.has(tagName) ?
                                         "''" :
                                         "'</" + (tagName || 'div') + ">'")
                             ],
@@ -201,7 +201,7 @@ var Template = /** @class */ (function () {
                     this._currentElement = els[els.length - 1];
                     this._currentElement.innerSource.push("this['" + elName + "']()");
                 }
-                else if (!isHelper && (content || !tagName || !(tagName in self_closing_tags_1.map))) {
+                else if (!isHelper && (content || !tagName || !self_closing_tags_1.map.has(tagName))) {
                     this._currentElement.innerSource.push("'</" + (tagName || 'div') + ">'");
                 }
                 break;

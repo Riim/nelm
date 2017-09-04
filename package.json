@@ -1,6 +1,6 @@
 {
   "name": "nelm",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -20,11 +20,11 @@
   "homepage": "https://github.com/Riim/nelm#readme",
   "devDependencies": {
     "jest-cli": "^20.0.4",
-    "typescript": "^2.5.1"
+    "typescript": "^2.5.2"
   },
   "dependencies": {
     "@riim/escape-html": "^1.1.0",
-    "@riim/self-closing-tags": "^1.0.1",
+    "@riim/self-closing-tags": "^1.0.2",
     "escape-string": "^1.0.1",
     "nelm-parser": "^1.1.6"
   },

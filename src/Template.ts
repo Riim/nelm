@@ -1,5 +1,5 @@
 import escapeHTML from '@riim/escape-html';
-import { map as selfClosingTags } from '@riim/self-closing-tags';
+import { map as selfClosingTagMap } from '@riim/self-closing-tags';
 import escapeString from 'escape-string';
 import {
 	IBlock,
@@ -214,7 +214,7 @@ export default class Template {
 								content && content.length ?
 									`this['${ elName }@content']() + '</${ tagName || 'div' }>'` :
 									(
-										!content && tagName && tagName in selfClosingTags ?
+										!content && tagName && selfClosingTagMap.has(tagName) ?
 											"''" :
 											`'</${ tagName || 'div' }>'`
 									)
@@ -291,7 +291,7 @@ export default class Template {
 					els.pop();
 					this._currentElement = els[els.length - 1];
 					this._currentElement.innerSource.push(`this['${ elName }']()`);
-				} else if (!isHelper && (content || !tagName || !(tagName in selfClosingTags))) {
+				} else if (!isHelper && (content || !tagName || !selfClosingTagMap.has(tagName))) {
 					this._currentElement.innerSource.push(`'</${ tagName || 'div' }>'`);
 				}
 
