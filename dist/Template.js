@@ -8,12 +8,15 @@ var join = Array.prototype.join;
 var elNameDelimiter = '__';
 var Template = /** @class */ (function () {
     function Template(nelm, opts) {
-        this.parent = opts && opts.parent || null;
+        var parent = this.parent = opts && opts.parent || null;
         this.nelm = typeof nelm == 'string' ? new nelm_parser_1.Parser(nelm).parse() : nelm;
         var blockName = opts && opts.blockName || this.nelm.name;
         this._elementClassesTemplate = this.parent ?
             [blockName ? blockName + elNameDelimiter : ''].concat(this.parent._elementClassesTemplate) :
             [blockName ? blockName + elNameDelimiter : '', ''];
+        this._tagNameMap = { __proto__: parent && parent._tagNameMap };
+        this._attributeListMap = { __proto__: parent && parent._attributeListMap };
+        this._attributeCountMap = { __proto__: parent && parent._attributeCountMap };
     }
     Template.prototype.extend = function (nelm, opts) {
         return new Template(nelm, { __proto__: opts || null, parent: this });
@@ -69,11 +72,11 @@ var Template = /** @class */ (function () {
                 if (elNames) {
                     if (elName) {
                         if (tagName) {
-                            (this._tagNameMap || (this._tagNameMap = { __proto__: parent_1 && parent_1._tagNameMap || null }))[elName] = tagName;
+                            this._tagNameMap[elName] = tagName;
                         }
                         else {
                             // Не надо добавлять в конец ` || 'div'`, тк. ниже tagName используется как имя хелпера.
-                            tagName = parent_1 && parent_1._tagNameMap && parent_1._tagNameMap[elName];
+                            tagName = parent_1 && parent_1._tagNameMap[elName];
                         }
                         var renderedAttrs = void 0;
                         if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {

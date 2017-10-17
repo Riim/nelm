@@ -54,7 +54,7 @@ export default class Template {
 	_elementRendererMap: IElementRendererMap;
 
 	constructor(nelm: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
-		this.parent = opts && opts.parent || null;
+		let parent = this.parent = opts && opts.parent || null;
 		this.nelm = typeof nelm == 'string' ? new Parser(nelm).parse() : nelm;
 
 		let blockName = opts && opts.blockName || this.nelm.name;
@@ -62,6 +62,11 @@ export default class Template {
 		this._elementClassesTemplate = this.parent ?
 			[blockName ? blockName + elNameDelimiter : ''].concat(this.parent._elementClassesTemplate) :
 			[blockName ? blockName + elNameDelimiter : '', ''];
+
+		this._tagNameMap = { __proto__: parent && parent._tagNameMap } as any;
+
+		this._attributeListMap = { __proto__: parent && parent._attributeListMap } as any;
+		this._attributeCountMap = { __proto__: parent && parent._attributeCountMap } as any;
 	}
 
 	extend(nelm: string | IBlock, opts?: { blockName?: string }): Template {
@@ -132,12 +137,10 @@ export default class Template {
 				if (elNames) {
 					if (elName) {
 						if (tagName) {
-							(this._tagNameMap || (
-								this._tagNameMap = { __proto__: parent && parent._tagNameMap || null } as any
-							))[elName] = tagName;
+							this._tagNameMap[elName] = tagName;
 						} else {
 							// Не надо добавлять в конец ` || 'div'`, тк. ниже tagName используется как имя хелпера.
-							tagName = parent && parent._tagNameMap && parent._tagNameMap[elName];
+							tagName = parent && parent._tagNameMap[elName];
 						}
 
 						let renderedAttrs: string | undefined;
