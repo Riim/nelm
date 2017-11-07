@@ -302,3 +302,7 @@ test('escape sequences', () => {
 		'_\\t_\\x20_\\u0020_'
 	`).render()).toBe('_\t_\x20_\u0020_');
 });
+
+test('empty', () => {
+	expect(new Template('').render()).toBe('');
+});

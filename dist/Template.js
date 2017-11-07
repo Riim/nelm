@@ -5,15 +5,28 @@ var self_closing_tags_1 = require("@riim/self-closing-tags");
 var escape_string_1 = require("escape-string");
 var nelm_parser_1 = require("nelm-parser");
 var join = Array.prototype.join;
-var elNameDelimiter = '__';
+exports.ELEMENT_NAME_DELIMITER = '__';
 var Template = /** @class */ (function () {
     function Template(nelm, opts) {
-        var parent = this.parent = opts && opts.parent || null;
+        var parent = (this.parent = (opts && opts.parent) || null);
         this.nelm = typeof nelm == 'string' ? new nelm_parser_1.Parser(nelm).parse() : nelm;
-        var blockName = opts && opts.blockName || this.nelm.name;
-        this._elementClassesTemplate = this.parent ?
-            [blockName ? blockName + elNameDelimiter : ''].concat(this.parent._elementClassesTemplate) :
-            [blockName ? blockName + elNameDelimiter : '', ''];
+        var blockName = (opts && opts.blockName) || this.nelm.name;
+        if (this.parent) {
+            this._elementBlockNamesTemplate = [
+                blockName ? blockName + exports.ELEMENT_NAME_DELIMITER : ''
+            ].concat(this.parent._elementBlockNamesTemplate);
+        }
+        else if (blockName) {
+            if (Array.isArray(blockName)) {
+                this.setBlockName(blockName);
+            }
+            else {
+                this._elementBlockNamesTemplate = [blockName + exports.ELEMENT_NAME_DELIMITER, ''];
+            }
+        }
+        else {
+            this._elementBlockNamesTemplate = ['', ''];
+        }
         this._tagNameMap = { __proto__: parent && parent._tagNameMap };
         this._attributeListMap = { __proto__: parent && parent._attributeListMap };
         this._attributeCountMap = { __proto__: parent && parent._attributeCountMap };
@@ -22,39 +35,61 @@ var Template = /** @class */ (function () {
         return new Template(nelm, { __proto__: opts || null, parent: this });
     };
     Template.prototype.setBlockName = function (blockName) {
-        this._elementClassesTemplate[0] = blockName ? blockName + elNameDelimiter : '';
+        if (Array.isArray(blockName)) {
+            (this._elementBlockNamesTemplate = blockName.map(function (blockName) { return blockName + exports.ELEMENT_NAME_DELIMITER; })).push('');
+        }
+        else {
+            this._elementBlockNamesTemplate[0] = blockName + exports.ELEMENT_NAME_DELIMITER;
+        }
         return this;
     };
     Template.prototype.render = function () {
         var _this = this;
-        return (this._renderer || this._compileRenderers()).call(this._elementRendererMap).replace(/<<([^>]+)>>/g, function (match, names) { return _this._renderElementClasses(names.split(',')); });
+        return (this._renderer || this._compileRenderers())
+            .call(this._elementRendererMap)
+            .replace(/<<([^>]+)>>/g, function (match, names) {
+            return _this._renderElementClasses(names.split(','));
+        });
     };
     Template.prototype._compileRenderers = function () {
         var parent = this.parent;
-        this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
-        var elMap = this._elementMap = {};
+        this._elements = [
+            (this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })
+        ];
+        var elMap = (this._elementMap = {});
         if (parent) {
             this._renderer = parent._renderer || parent._compileRenderers();
         }
-        for (var _i = 0, _a = this.nelm.content; _i < _a.length; _i++) {
-            var node = _a[_i];
-            this._compileNode(node);
-        }
-        if (!parent) {
-            this._renderer = Function("return " + this._currentElement.innerSource.join(' + ') + ";");
-        }
-        Object.keys(elMap).forEach(function (name) {
-            var el = elMap[name];
-            this[name] = Function("return " + el.source.join(' + ') + ";");
-            if (el.superCall) {
-                var inner_1 = Function('$super', "return " + (el.innerSource.join(' + ') || "''") + ";");
-                var parentElementRendererMap_1 = parent && parent._elementRendererMap;
-                this[name + '@content'] = function () { return inner_1.call(this, parentElementRendererMap_1); };
+        var elementRendererMap = (this._elementRendererMap = {
+            __proto__: parent && parent._elementRendererMap
+        });
+        var content = this.nelm.content;
+        var contentLength = content.length;
+        if (contentLength) {
+            for (var i = 0; i < contentLength; i++) {
+                this._compileNode(content[i]);
             }
-            else {
-                this[name + '@content'] = Function("return " + (el.innerSource.join(' + ') || "''") + ";");
+            Object.keys(elMap).forEach(function (name) {
+                var el = elMap[name];
+                this[name] = Function("return " + el.source.join(' + ') + ";");
+                if (el.superCall) {
+                    var inner_1 = Function('$super', "return " + (el.innerSource.join(' + ') || "''") + ";");
+                    var parentElementRendererMap_1 = parent && parent._elementRendererMap;
+                    this[name + '@content'] = function () {
+                        return inner_1.call(this, parentElementRendererMap_1);
+                    };
+                }
+                else {
+                    this[name + '@content'] = Function("return " + (el.innerSource.join(' + ') || "''") + ";");
+                }
+            }, elementRendererMap);
+            if (!parent) {
+                return (this._renderer = Function("return " + this._currentElement.innerSource.join(' + ') + ";"));
             }
-        }, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap }));
+        }
+        else if (!parent) {
+            return (this._renderer = function () { return ''; });
+        }
         return this._renderer;
     };
     Template.prototype._compileNode = function (node, parentElName) {
@@ -75,15 +110,20 @@ var Template = /** @class */ (function () {
                             this._tagNameMap[elName] = tagName;
                         }
                         else {
-                            // Не надо добавлять в конец ` || 'div'`, тк. ниже tagName используется как имя хелпера.
+                            // Не надо добавлять в конец ` || 'div'`,
+                            // тк. ниже tagName используется как имя хелпера.
                             tagName = parent_1 && parent_1._tagNameMap[elName];
                         }
                         var renderedAttrs = void 0;
                         if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
-                            var attrListMap = this._attributeListMap || (this._attributeListMap = { __proto__: parent_1 && parent_1._attributeListMap || null });
-                            var attrCountMap = this._attributeCountMap || (this._attributeCountMap = {
-                                __proto__: parent_1 && parent_1._attributeCountMap || null
-                            });
+                            var attrListMap = this._attributeListMap ||
+                                (this._attributeListMap = {
+                                    __proto__: (parent_1 && parent_1._attributeListMap) || null
+                                });
+                            var attrCountMap = this._attributeCountMap ||
+                                (this._attributeCountMap = {
+                                    __proto__: (parent_1 && parent_1._attributeCountMap) || null
+                                });
                             var elAttrsSuperCall = elAttrs.superCall;
                             var attrList = void 0;
                             var attrCount = void 0;
@@ -107,12 +147,14 @@ var Template = /** @class */ (function () {
                                 var value = attr.value;
                                 var index = attrList[name_1];
                                 if (index === undefined) {
-                                    attrList[attrCount] = " " + name_1 + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
+                                    attrList[attrCount] = " " + name_1 + "=\"" + (value &&
+                                        escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                     attrList[name_1] = attrCount;
                                     attrCountMap[elName] = ++attrCount;
                                 }
                                 else {
-                                    attrList[index] = " " + name_1 + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
+                                    attrList[index] = " " + name_1 + "=\"" + (value &&
+                                        escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                 }
                             }
                             if (!isHelper) {
@@ -121,13 +163,15 @@ var Template = /** @class */ (function () {
                                     length: attrCount
                                 };
                                 if (attrList['class'] !== undefined) {
-                                    attrList[attrList['class']] = " class=\"<<" + elNames.join(',') + ">> " +
-                                        attrList[attrList['class']].slice(' class="'.length);
+                                    attrList[attrList['class']] =
+                                        " class=\"<<" + elNames.join(',') + ">> " +
+                                            attrList[attrList['class']].slice(' class="'.length);
                                     renderedAttrs = join.call(attrList, '');
                                 }
                                 else {
-                                    renderedAttrs = " class=\"<<" + elNames.join(',') + ">>\"" +
-                                        join.call(attrList, '');
+                                    renderedAttrs =
+                                        " class=\"<<" + elNames.join(',') + ">>\"" +
+                                            join.call(attrList, '');
                                 }
                             }
                         }
@@ -137,14 +181,16 @@ var Template = /** @class */ (function () {
                         var currentEl = {
                             name: elName,
                             superCall: false,
-                            source: isHelper ? ["this['" + elName + "@content']()"] : [
-                                "'<" + (tagName || 'div') + renderedAttrs + ">'",
-                                content && content.length ?
-                                    "this['" + elName + "@content']() + '</" + (tagName || 'div') + ">'" :
-                                    (!content && tagName && self_closing_tags_1.map.has(tagName) ?
-                                        "''" :
-                                        "'</" + (tagName || 'div') + ">'")
-                            ],
+                            source: isHelper
+                                ? ["this['" + elName + "@content']()"]
+                                : [
+                                    "'<" + (tagName || 'div') + renderedAttrs + ">'",
+                                    content && content.length
+                                        ? "this['" + elName + "@content']() + '</" + (tagName || 'div') + ">'"
+                                        : !content && tagName && self_closing_tags_1.map.has(tagName)
+                                            ? "''"
+                                            : "'</" + (tagName || 'div') + ">'"
+                                ],
                             innerSource: []
                         };
                         els.push((this._currentElement = currentEl));
@@ -159,13 +205,18 @@ var Template = /** @class */ (function () {
                                 var value = attr.value;
                                 if (attr.name == 'class') {
                                     hasClassAttr = true;
-                                    attrs += " class=\"<<" + elNames.join(',').slice(1) + ">>" + (value ? ' ' + value : '') + "\"";
+                                    attrs += " class=\"<<" + elNames.join(',').slice(1) + ">>" + (value
+                                        ? ' ' + value
+                                        : '') + "\"";
                                 }
                                 else {
-                                    attrs += " " + attr.name + "=\"" + (value && escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
+                                    attrs += " " + attr.name + "=\"" + (value &&
+                                        escape_html_1.escapeHTML(escape_string_1.escapeString(value))) + "\"";
                                 }
                             }
-                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (hasClassAttr ? attrs : " class=\"<<" + elNames.join(',').slice(1) + ">>\"" + attrs) + ">'");
+                            this._currentElement.innerSource.push("'<" + (tagName || 'div') + (hasClassAttr
+                                ? attrs
+                                : " class=\"<<" + elNames.join(',').slice(1) + ">>\"" + attrs) + ">'");
                         }
                         else {
                             this._currentElement.innerSource.push("'<" + (tagName || 'div') + " class=\"<<" + elNames.join(',').slice(1) + ">>\">'");
@@ -173,9 +224,14 @@ var Template = /** @class */ (function () {
                     }
                 }
                 else if (!isHelper) {
-                    this._currentElement.innerSource.push("'<" + (tagName || 'div') + (elAttrs ?
-                        elAttrs.list.map(function (attr) { return " " + attr.name + "=\"" + (attr.value && escape_html_1.escapeHTML(escape_string_1.escapeString(attr.value))) + "\""; }).join('') :
-                        '') + ">'");
+                    this._currentElement.innerSource.push("'<" + (tagName || 'div') + (elAttrs
+                        ? elAttrs.list
+                            .map(function (attr) {
+                            return " " + attr.name + "=\"" + (attr.value &&
+                                escape_html_1.escapeHTML(escape_string_1.escapeString(attr.value))) + "\"";
+                        })
+                            .join('')
+                        : '') + ">'");
                 }
                 if (isHelper) {
                     if (!tagName) {
@@ -214,8 +270,8 @@ var Template = /** @class */ (function () {
                 break;
             }
             case nelm_parser_1.NodeType.SUPER_CALL: {
-                this._currentElement.innerSource
-                    .push("$super['" + (node.elementName || parentElName) + "@content'].call(this)");
+                this._currentElement.innerSource.push("$super['" + (node.elementName ||
+                    parentElName) + "@content'].call(this)");
                 this._currentElement.superCall = true;
                 break;
             }
@@ -224,7 +280,7 @@ var Template = /** @class */ (function () {
     Template.prototype._renderElementClasses = function (elNames) {
         var elClasses = '';
         for (var i = 0, l = elNames.length; i < l; i++) {
-            elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+            elClasses += this._elementBlockNamesTemplate.join(elNames[i] + ' ');
         }
         return elClasses.slice(0, -1);
     };

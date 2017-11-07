@@ -29,17 +29,17 @@ export interface IElementRendererMap {
 	[elName: string]: TElementRenderer;
 }
 
-let elNameDelimiter = '__';
+export let ELEMENT_NAME_DELIMITER = '__';
 
 export default class Template {
 	static helpers: { [name: string]: (el: INelmElement) => TContent | null } = {
-		section: (el) => el.content
+		section: el => el.content
 	};
 
 	parent: Template | null;
 	nelm: IBlock;
 
-	_elementClassesTemplate: Array<string>;
+	_elementBlockNamesTemplate: Array<string>;
 
 	_tagNameMap: { [elName: string]: string };
 
@@ -53,15 +53,28 @@ export default class Template {
 	_renderer: TRenderer;
 	_elementRendererMap: IElementRendererMap;
 
-	constructor(nelm: string | IBlock, opts?: { parent?: Template, blockName?: string }) {
-		let parent = this.parent = opts && opts.parent || null;
+	constructor(
+		nelm: string | IBlock,
+		opts?: { parent?: Template; blockName?: string | Array<string> }
+	) {
+		let parent = (this.parent = (opts && opts.parent) || null);
 		this.nelm = typeof nelm == 'string' ? new Parser(nelm).parse() : nelm;
 
-		let blockName = opts && opts.blockName || this.nelm.name;
+		let blockName = (opts && opts.blockName) || this.nelm.name;
 
-		this._elementClassesTemplate = this.parent ?
-			[blockName ? blockName + elNameDelimiter : ''].concat(this.parent._elementClassesTemplate) :
-			[blockName ? blockName + elNameDelimiter : '', ''];
+		if (this.parent) {
+			this._elementBlockNamesTemplate = [
+				blockName ? (blockName as string) + ELEMENT_NAME_DELIMITER : ''
+			].concat(this.parent._elementBlockNamesTemplate);
+		} else if (blockName) {
+			if (Array.isArray(blockName)) {
+				this.setBlockName(blockName);
+			} else {
+				this._elementBlockNamesTemplate = [blockName + ELEMENT_NAME_DELIMITER, ''];
+			}
+		} else {
+			this._elementBlockNamesTemplate = ['', ''];
+		}
 
 		this._tagNameMap = { __proto__: parent && parent._tagNameMap } as any;
 
@@ -73,50 +86,82 @@ export default class Template {
 		return new Template(nelm, { __proto__: opts || null, parent: this } as any);
 	}
 
-	setBlockName(blockName: string | null): Template {
-		this._elementClassesTemplate[0] = blockName ? blockName + elNameDelimiter : '';
+	setBlockName(blockName: string | Array<string>): Template {
+		if (Array.isArray(blockName)) {
+			(this._elementBlockNamesTemplate = blockName.map(
+				blockName => blockName + ELEMENT_NAME_DELIMITER
+			)).push('');
+		} else {
+			this._elementBlockNamesTemplate[0] = blockName + ELEMENT_NAME_DELIMITER;
+		}
+
 		return this;
 	}
 
 	render(): string {
-		return (this._renderer || this._compileRenderers()).call(this._elementRendererMap).replace(
-			/<<([^>]+)>>/g,
-			(match: RegExpMatchArray, names: string): string => this._renderElementClasses(names.split(','))
-		);
+		return (this._renderer || this._compileRenderers())
+			.call(this._elementRendererMap)
+			.replace(/<<([^>]+)>>/g, (match: RegExpMatchArray, names: string): string =>
+				this._renderElementClasses(names.split(','))
+			);
 	}
 
 	_compileRenderers(): TRenderer {
 		let parent = this.parent;
 
-		this._elements = [(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })];
-		let elMap = this._elementMap = {} as { [elName: string]: IElement };
+		this._elements = [
+			(this._currentElement = { name: null, superCall: false, source: null, innerSource: [] })
+		];
+		let elMap = (this._elementMap = {} as { [elName: string]: IElement });
 
 		if (parent) {
 			this._renderer = parent._renderer || parent._compileRenderers();
 		}
 
-		for (let node of this.nelm.content) {
-			this._compileNode(node);
-		}
+		let elementRendererMap = (this._elementRendererMap = {
+			__proto__: parent && parent._elementRendererMap
+		} as any);
 
-		if (!parent) {
-			this._renderer = Function(`return ${ this._currentElement.innerSource.join(' + ') };`) as TRenderer;
-		}
+		let content = this.nelm.content;
+		let contentLength = content.length;
 
-		Object.keys(elMap).forEach(function(this: IElementRendererMap, name: string) {
-			let el = elMap[name];
-
-			this[name] = Function(`return ${ (el.source as Array<string>).join(' + ') };`) as TElementRenderer;
-
-			if (el.superCall) {
-				let inner = Function('$super', `return ${ el.innerSource.join(' + ') || "''" };`) as TElementRenderer;
-				let parentElementRendererMap = parent && parent._elementRendererMap;
-				this[name + '@content'] = function() { return inner.call(this, parentElementRendererMap); };
-			} else {
-				this[name + '@content'] = Function(`return ${ el.innerSource.join(' + ') || "''" };`) as
-					TElementRenderer;
+		if (contentLength) {
+			for (let i = 0; i < contentLength; i++) {
+				this._compileNode(content[i]);
 			}
-		}, (this._elementRendererMap = { __proto__: parent && parent._elementRendererMap } as any));
+
+			Object.keys(elMap).forEach(function(this: IElementRendererMap, name: string) {
+				let el = elMap[name];
+
+				this[name] = Function(
+					`return ${(el.source as Array<string>).join(' + ')};`
+				) as TElementRenderer;
+
+				if (el.superCall) {
+					let inner = Function(
+						'$super',
+						`return ${el.innerSource.join(' + ') || "''"};`
+					) as TElementRenderer;
+					let parentElementRendererMap = parent && parent._elementRendererMap;
+
+					this[name + '@content'] = function() {
+						return inner.call(this, parentElementRendererMap);
+					};
+				} else {
+					this[name + '@content'] = Function(
+						`return ${el.innerSource.join(' + ') || "''"};`
+					) as TElementRenderer;
+				}
+			}, elementRendererMap);
+
+			if (!parent) {
+				return (this._renderer = Function(
+					`return ${this._currentElement.innerSource.join(' + ')};`
+				) as TRenderer);
+			}
+		} else if (!parent) {
+			return (this._renderer = () => '');
+		}
 
 		return this._renderer;
 	}
@@ -139,22 +184,24 @@ export default class Template {
 						if (tagName) {
 							this._tagNameMap[elName] = tagName;
 						} else {
-							// Не надо добавлять в конец ` || 'div'`, тк. ниже tagName используется как имя хелпера.
+							// Не надо добавлять в конец ` || 'div'`,
+							// тк. ниже tagName используется как имя хелпера.
 							tagName = parent && parent._tagNameMap[elName];
 						}
 
 						let renderedAttrs: string | undefined;
 
 						if (elAttrs && (elAttrs.list.length || elAttrs.superCall)) {
-							let attrListMap = this._attributeListMap || (
-								this._attributeListMap = { __proto__: parent && parent._attributeListMap || null } as
-									any
-							);
-							let attrCountMap = this._attributeCountMap || (
-								this._attributeCountMap = {
-									__proto__: parent && parent._attributeCountMap || null
-								} as any
-							);
+							let attrListMap =
+								this._attributeListMap ||
+								(this._attributeListMap = {
+									__proto__: (parent && parent._attributeListMap) || null
+								} as any);
+							let attrCountMap =
+								this._attributeCountMap ||
+								(this._attributeCountMap = {
+									__proto__: (parent && parent._attributeCountMap) || null
+								} as any);
 
 							let elAttrsSuperCall = elAttrs.superCall;
 							let attrList: { [key: string]: any };
@@ -162,14 +209,21 @@ export default class Template {
 
 							if (elAttrsSuperCall) {
 								if (!parent) {
-									throw new TypeError('Parent template is required when using super');
+									throw new TypeError(
+										'Parent template is required when using super'
+									);
 								}
 
 								attrList = attrListMap[elName] = {
-									__proto__: parent._attributeListMap[elAttrsSuperCall.elementName || elName] || null
+									__proto__:
+										parent._attributeListMap[
+											elAttrsSuperCall.elementName || elName
+										] || null
 								};
 								attrCount = attrCountMap[elName] =
-									parent._attributeCountMap[elAttrsSuperCall.elementName || elName] || 0;
+									parent._attributeCountMap[
+										elAttrsSuperCall.elementName || elName
+									] || 0;
 							} else {
 								attrList = attrListMap[elName] = { __proto__: null };
 								attrCount = attrCountMap[elName] = 0;
@@ -181,11 +235,13 @@ export default class Template {
 								let index = attrList[name];
 
 								if (index === undefined) {
-									attrList[attrCount] = ` ${ name }="${ value && escapeHTML(escapeString(value)) }"`;
+									attrList[attrCount] = ` ${name}="${value &&
+										escapeHTML(escapeString(value))}"`;
 									attrList[name] = attrCount;
 									attrCountMap[elName] = ++attrCount;
 								} else {
-									attrList[index] = ` ${ name }="${ value && escapeHTML(escapeString(value)) }"`;
+									attrList[index] = ` ${name}="${value &&
+										escapeHTML(escapeString(value))}"`;
 								}
 							}
 
@@ -196,32 +252,33 @@ export default class Template {
 								};
 
 								if (attrList['class'] !== undefined) {
-									attrList[attrList['class']] = ` class="<<${ elNames.join(',') }>> ` +
+									attrList[attrList['class']] =
+										` class="<<${elNames.join(',')}>> ` +
 										attrList[attrList['class']].slice(' class="'.length);
-
 									renderedAttrs = join.call(attrList, '');
 								} else {
-									renderedAttrs = ` class="<<${ elNames.join(',') }>>"` +
+									renderedAttrs =
+										` class="<<${elNames.join(',')}>>"` +
 										join.call(attrList, '');
 								}
 							}
 						} else if (!isHelper) {
-							renderedAttrs = ` class="<<${ elNames.join(',') }>>"`;
+							renderedAttrs = ` class="<<${elNames.join(',')}>>"`;
 						}
 
 						let currentEl = {
 							name: elName,
 							superCall: false,
-							source: isHelper ? [`this['${ elName }@content']()`] : [
-								`'<${ tagName || 'div' }${ renderedAttrs }>'`,
-								content && content.length ?
-									`this['${ elName }@content']() + '</${ tagName || 'div' }>'` :
-									(
-										!content && tagName && selfClosingTagMap.has(tagName) ?
-											"''" :
-											`'</${ tagName || 'div' }>'`
-									)
-							],
+							source: isHelper
+								? [`this['${elName}@content']()`]
+								: [
+										`'<${tagName || 'div'}${renderedAttrs}>'`,
+										content && content.length
+											? `this['${elName}@content']() + '</${tagName || 'div'}>'`
+											: !content && tagName && selfClosingTagMap.has(tagName)
+												? "''"
+												: `'</${tagName || 'div'}>'`
+									],
 							innerSource: []
 						};
 
@@ -237,33 +294,38 @@ export default class Template {
 
 								if (attr.name == 'class') {
 									hasClassAttr = true;
-									attrs += ` class="<<${ elNames.join(',').slice(1) }>>${
-										value ? ' ' + value : ''
-									}"`;
+									attrs += ` class="<<${elNames.join(',').slice(1)}>>${value
+										? ' ' + value
+										: ''}"`;
 								} else {
-									attrs += ` ${ attr.name }="${ value && escapeHTML(escapeString(value)) }"`;
+									attrs += ` ${attr.name}="${value &&
+										escapeHTML(escapeString(value))}"`;
 								}
 							}
 
 							this._currentElement.innerSource.push(
-								`'<${ tagName || 'div' }${
-									hasClassAttr ? attrs : ` class="<<${ elNames.join(',').slice(1) }>>"` + attrs
-								}>'`
+								`'<${tagName || 'div'}${hasClassAttr
+									? attrs
+									: ` class="<<${elNames.join(',').slice(1)}>>"` + attrs}>'`
 							);
 						} else {
 							this._currentElement.innerSource.push(
-								`'<${ tagName || 'div' } class="<<${ elNames.join(',').slice(1) }>>">'`
+								`'<${tagName || 'div'} class="<<${elNames.join(',').slice(1)}>>">'`
 							);
 						}
 					}
 				} else if (!isHelper) {
-					this._currentElement.innerSource.push(`'<${ tagName || 'div' }${
-						elAttrs ?
-							elAttrs.list.map(
-								(attr) => ` ${ attr.name }="${ attr.value && escapeHTML(escapeString(attr.value)) }"`
-							).join('') :
-							''
-					}>'`);
+					this._currentElement.innerSource.push(
+						`'<${tagName || 'div'}${elAttrs
+							? elAttrs.list
+									.map(
+										attr =>
+											` ${attr.name}="${attr.value &&
+												escapeHTML(escapeString(attr.value))}"`
+									)
+									.join('')
+							: ''}>'`
+					);
 				}
 
 				if (isHelper) {
@@ -274,7 +336,7 @@ export default class Template {
 					let helper = Template.helpers[tagName];
 
 					if (!helper) {
-						throw new TypeError(`Helper "${ tagName }" is not defined`);
+						throw new TypeError(`Helper "${tagName}" is not defined`);
 					}
 
 					let content = helper(el);
@@ -293,21 +355,27 @@ export default class Template {
 				if (elName) {
 					els.pop();
 					this._currentElement = els[els.length - 1];
-					this._currentElement.innerSource.push(`this['${ elName }']()`);
+					this._currentElement.innerSource.push(`this['${elName}']()`);
 				} else if (!isHelper && (content || !tagName || !selfClosingTagMap.has(tagName))) {
-					this._currentElement.innerSource.push(`'</${ tagName || 'div' }>'`);
+					this._currentElement.innerSource.push(`'</${tagName || 'div'}>'`);
 				}
 
 				break;
 			}
 			case NodeType.TEXT: {
-				this._currentElement.innerSource.push(`'${ escapeString((node as ITextNode).value) }'`);
+				this._currentElement.innerSource.push(
+					`'${escapeString((node as ITextNode).value)}'`
+				);
+
 				break;
 			}
 			case NodeType.SUPER_CALL: {
-				this._currentElement.innerSource
-					.push(`$super['${ (node as ISuperCall).elementName || parentElName }@content'].call(this)`);
+				this._currentElement.innerSource.push(
+					`$super['${(node as ISuperCall).elementName ||
+						parentElName}@content'].call(this)`
+				);
 				this._currentElement.superCall = true;
+
 				break;
 			}
 		}
@@ -317,7 +385,7 @@ export default class Template {
 		let elClasses = '';
 
 		for (let i = 0, l = elNames.length; i < l; i++) {
-			elClasses += this._elementClassesTemplate.join(elNames[i] + ' ');
+			elClasses += this._elementBlockNamesTemplate.join(elNames[i] + ' ');
 		}
 
 		return elClasses.slice(0, -1);

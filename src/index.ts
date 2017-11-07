@@ -17,5 +17,6 @@ export {
 	TRenderer as TTemplateRenderer,
 	TElementRenderer as TTemplateElementRenderer,
 	IElementRendererMap as ITemplateElementRendererMap,
+	ELEMENT_NAME_DELIMITER,
 	default as Template
 } from './Template';

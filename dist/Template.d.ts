@@ -10,13 +10,14 @@ export declare type TElementRenderer = (this: IElementRendererMap, $super?: IEle
 export interface IElementRendererMap {
     [elName: string]: TElementRenderer;
 }
+export declare let ELEMENT_NAME_DELIMITER: string;
 export default class Template {
     static helpers: {
         [name: string]: (el: INelmElement) => TContent | null;
     };
     parent: Template | null;
     nelm: IBlock;
-    _elementClassesTemplate: Array<string>;
+    _elementBlockNamesTemplate: Array<string>;
     _tagNameMap: {
         [elName: string]: string;
     };
@@ -35,12 +36,12 @@ export default class Template {
     _elementRendererMap: IElementRendererMap;
     constructor(nelm: string | IBlock, opts?: {
         parent?: Template;
-        blockName?: string;
+        blockName?: string | Array<string>;
     });
     extend(nelm: string | IBlock, opts?: {
         blockName?: string;
     }): Template;
-    setBlockName(blockName: string | null): Template;
+    setBlockName(blockName: string | Array<string>): Template;
     render(): string;
     _compileRenderers(): TRenderer;
     _compileNode(node: INode, parentElName?: string): void;
