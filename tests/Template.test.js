@@ -4,14 +4,18 @@ let Template = require('../dist/Template').default;
 test('simple template', () => {
 	expect(new Template(`
 		#block1
-		b { 'text' }
+		b {
+			'text'
+		}
 	`).render()).toBe('<b>text</b>');
 });
 
 test('element name', () => {
 	expect(new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 	`).render()).toBe('<b class="block1__el1">text</b>');
 });
 
@@ -32,26 +36,34 @@ test('multiple element names (2)', () => {
 test('override element tagName', () => {
 	let t1 = new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 		br
 	`);
 
 	expect(t1.extend(`
 		#block1-x
-		i/el1 { 'text' }
+		i/el1 {
+			'text'
+		}
 	`).render()).toBe('<i class="block1-x__el1 block1__el1">text</i><br>');
 });
 
 test('override element content', () => {
 	let t1 = new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 		br
 	`);
 
 	expect(t1.extend(`
 		#block1-x
-		b/el1 { 'other text' }
+		b/el1 {
+			'other text'
+		}
 	`).render()).toBe('<b class="block1-x__el1 block1__el1">other text</b><br>');
 });
 
@@ -63,7 +75,9 @@ test('tagName super', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		/el1 { 'text' }
+		/el1 {
+			'text'
+		}
 	`).render()).toBe('<b class="block1-x__el1 block1__el1">text</b>');
 });
 
@@ -77,7 +91,9 @@ test('tagName super super', () => {
 
 	expect(t2.extend(`
 		#block1-x-x
-		/el1 { 'text' }
+		/el1 {
+			'text'
+		}
 	`).render()).toBe('<b class="block1-x-x__el1 block1-x__el1 block1__el1">text</b>');
 });
 
@@ -150,13 +166,17 @@ test('attributes super.name!', () => {
 test('content super', () => {
 	let t1 = new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 	`);
 
 	expect(t1.extend(`
 		#block1-x
 		u/el1 {
-			b { super! }
+			b {
+				super!
+			}
 		}
 	`).render()).toBe('<u class="block1-x__el1 block1__el1"><b>text</b></u>');
 });
@@ -170,14 +190,18 @@ test('content super (2)', () => {
 
 	expect(t1.extend(`
 		#block1-x
-		i/el2 { super! }
+		i/el2 {
+			super!
+		}
 	`).render()).toBe('<b class="block1-x__el1 block1__el1"></b><i class="block1-x__el2 block1__el2"></i>');
 });
 
 test('content super super', () => {
 	let t1 = new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 	`);
 
 	let t2 = t1.extend('#block1-x');
@@ -185,7 +209,9 @@ test('content super super', () => {
 	expect(t2.extend(`
 		#block1-x-x
 		u/el1 {
-			b { super! }
+			b {
+				super!
+			}
 		}
 	`).render()).toBe('<u class="block1-x-x__el1 block1-x__el1 block1__el1"><b>text</b></u>');
 });
@@ -193,13 +219,17 @@ test('content super super', () => {
 test('content super.name', () => {
 	let t1 = new Template(`
 		#block1
-		b/el1 { 'text' }
+		b/el1 {
+			'text'
+		}
 	`);
 
 	expect(t1.extend(`
 		#block1-x
 		u/el1 {
-			b/el2 { super.el1! }
+			b/el2 {
+				super.el1!
+			}
 		}
 	`).render()).toBe(
 		'<u class="block1-x__el1 block1__el1"><b class="block1-x__el2 block1__el2">text</b></u>'
@@ -235,7 +265,9 @@ test('helper', () => {
 
 	expect(new Template(`
 		#block1
-		b { @test }
+		b {
+			@test
+		}
 	`).render()).toBe('<b>123</b>');
 });
 
@@ -251,7 +283,9 @@ test('helper (2)', () => {
 	expect(new Template(`
 		#block1
 		b {
-			@test { i }
+			@test {
+				i
+			}
 		}
 	`).render()).toBe('<b>[<i></i>]</b>');
 });
@@ -292,7 +326,9 @@ test('helper content super', () => {
 	expect(t1.extend(`
 		#block1-x
 		@/inner {
-			u { super! }
+			u {
+				super!
+			}
 		}
 	`).render()).toBe('<u><b></b></u>');
 });
