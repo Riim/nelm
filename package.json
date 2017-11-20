@@ -1,6 +1,6 @@
 {
   "name": "nelm",
-  "version": "0.4.24",
+  "version": "0.4.28",
   "description": "",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -26,7 +26,7 @@
     "@riim/escape-html": "^1.1.1",
     "@riim/self-closing-tags": "^1.0.2",
     "escape-string": "^1.0.2",
-    "nelm-parser": "^1.1.8"
+    "nelm-parser": "^1.1.11"
   },
   "jest": {
     "testEnvironment": "node"
