@@ -156,7 +156,7 @@ export default class Template {
 
 			if (!parent) {
 				return (this._renderer = Function(
-					`return ${this._currentElement.innerSource.join(' + ')};`
+					`return ${this._currentElement.innerSource.join(' + ') || "''"};`
 				) as TRenderer);
 			}
 		} else if (!parent) {

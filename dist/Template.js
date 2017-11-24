@@ -84,7 +84,7 @@ var Template = /** @class */ (function () {
                 }
             }, elementRendererMap);
             if (!parent) {
-                return (this._renderer = Function("return " + this._currentElement.innerSource.join(' + ') + ";"));
+                return (this._renderer = Function("return " + (this._currentElement.innerSource.join(' + ') || "''") + ";"));
             }
         }
         else if (!parent) {
