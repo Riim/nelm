@@ -289,4 +289,4 @@ var Template = /** @class */ (function () {
     };
     return Template;
 }());
-exports.default = Template;
+exports.Template = Template;

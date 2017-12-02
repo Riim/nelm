@@ -10,7 +10,7 @@ export {
 	IElement,
 	ITextNode,
 	IComment,
-	default as Parser
+	Parser
 } from 'nelm-parser';
 export {
 	IElement as ITemplateElement,
@@ -18,5 +18,5 @@ export {
 	TElementRenderer as TTemplateElementRenderer,
 	IElementRendererMap as ITemplateElementRendererMap,
 	ELEMENT_NAME_DELIMITER,
-	default as Template
+	Template
 } from './Template';

@@ -11,7 +11,7 @@ export interface IElementRendererMap {
     [elName: string]: TElementRenderer;
 }
 export declare let ELEMENT_NAME_DELIMITER: string;
-export default class Template {
+export declare class Template {
     static helpers: {
         [name: string]: (el: INelmElement) => TContent | null;
     };

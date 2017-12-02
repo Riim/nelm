@@ -31,7 +31,7 @@ export interface IElementRendererMap {
 
 export let ELEMENT_NAME_DELIMITER = '__';
 
-export default class Template {
+export class Template {
 	static helpers: { [name: string]: (el: INelmElement) => TContent | null } = {
 		section: el => el.content
 	};
